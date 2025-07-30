@@ -1,4 +1,4 @@
-import logging
+import logfire
 import dotenv
 from pydantic_ai import Agent
 
@@ -115,11 +115,11 @@ async def stream_answer(prompt: str, delta: bool = True, direct: bool = False):
 
     result = await rewrite_agent.run(prompt)
     rewritten_prompt = result.output
-    logging.info(f"\n\n*** REWRITTEN PROMPT: {rewritten_prompt}")
+    logfire.info(f"\n\n*** REWRITTEN PROMPT: {rewritten_prompt}")
 
     result = await answer_agent.run(rewritten_prompt)
     answer = result.output
-    logging.info(f"\n\n*** RAW ANSWER: {answer}")
+    logfire.info(f"\n\n*** RAW ANSWER: {answer}")
 
     rewrite_answer_prompt = REWRITE_ANSWER_PROMPT % (prompt, answer)
 

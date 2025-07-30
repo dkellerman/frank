@@ -1,10 +1,9 @@
 import modal
 import os
-import logging
 import dotenv
 import logfire
 from upstash_redis.asyncio import Redis
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
@@ -12,7 +11,6 @@ from frank.models import ChatRequest, ChatResponse, ChatEvent
 from frank.agent import stream_answer
 
 dotenv.load_dotenv()
-logging.basicConfig(level=logging.INFO)
 
 image = (
     modal.Image.debian_slim()
@@ -61,7 +59,7 @@ async def chat_ws(ws: WebSocket):
                 try:
                     request = ChatRequest.model_validate_json(data)
                 except ValidationError as e:
-                    logging.info(f"Message validation error: {e}")
+                    logfire.info(f"Message validation error: {e}")
                     await send_message(ws, ChatResponse(text=f"Error: {e}", done=True))
                     continue
                 async for chunk in stream_answer(
@@ -71,14 +69,14 @@ async def chat_ws(ws: WebSocket):
                 await send_message(ws, ChatResponse(text="  **⨍**", done=True))
 
     except WebSocketDisconnect:
-        logging.info("WebSocket disconnected")
+        logfire.info("WebSocket disconnected")
 
     except RuntimeError as e:
         ignore = 'Cannot call "receive" once a disconnect message has been received'
         if ignore in str(e):
             pass
         else:
-            logging.error(f"Runtime error: {e}")
+            logfire.error(f"Runtime error: {e}")
             raise
     finally:
         pass
