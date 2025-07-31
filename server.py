@@ -1,14 +1,22 @@
 import modal
 import os
+import json
 import dotenv
 import logfire
+import pydantic
 from upstash_redis.asyncio import Redis
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
-from frank.models import ChatRequest, ChatResponse, ChatEvent
 from frank.agent import stream_answer
+from frank.models import (
+    ChatEvent,
+    EventType,
+    SendEvent,
+    ReplyEvent,
+    ErrorEvent,
+)
 
 dotenv.load_dotenv()
 
@@ -57,16 +65,19 @@ async def chat_ws(ws: WebSocket):
             data = await ws.receive_text()
             if data:
                 try:
-                    request = ChatRequest.model_validate_json(data)
+                    event = pydantic.TypeAdapter(ChatEvent).validate_python(
+                        json.loads(data)
+                    )
                 except ValidationError as e:
                     logfire.info(f"Message validation error: {e}")
-                    await send_message(ws, ChatResponse(text=f"Error: {e}", done=True))
+                    await send_to_user(
+                        ws, ErrorEvent(detail=f"Error: {e}", code="validation_error")
+                    )
                     continue
-                async for chunk in stream_answer(
-                    request.message, delta=True, direct=request.direct
-                ):
-                    await send_message(ws, ChatResponse(text=chunk, done=False))
-                await send_message(ws, ChatResponse(text="  **⨍**", done=True))
+                if event.type == EventType.HELLO:
+                    await send_to_user(ws, event)  # send event back
+                elif event.type == EventType.SEND:
+                    await handle_send(ws, event)
 
     except WebSocketDisconnect:
         logfire.info("WebSocket disconnected")
@@ -82,8 +93,20 @@ async def chat_ws(ws: WebSocket):
         pass
 
 
-async def send_message(ws: WebSocket, message: ChatEvent):
-    await ws.send_text(message.model_dump_json())
+async def handle_send(ws: WebSocket, event: SendEvent):
+    """User sent a message, stream the answer."""
+    async for chunk in stream_answer(
+        event.message,
+        delta=True,
+        model=event.model,
+        direct=event.direct,
+    ):
+        await send_to_user(ws, ReplyEvent(text=chunk, done=False))
+    await send_to_user(ws, ReplyEvent(text="&emsp;**⨍**", done=True))
+
+
+async def send_to_user(ws: WebSocket, response: ChatEvent):
+    await ws.send_json(response.model_dump(by_alias=True))
 
 
 @web_app.get("/api/healthz")
