@@ -1,13 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
-import type { ChatEvent, ChatMessage, ErrorEvent, ReplyEvent, SendEvent } from '@/types';
-import clsx from 'clsx';
+import { flushSync } from 'react-dom';
+import { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router';
+import { Settings, MessageSquare } from 'lucide-react';
 import { Marked } from 'marked';
+import type { ChatEvent, ChatMessage, ErrorEvent, ReplyEvent, SendEvent } from '@/types';
+import { EventType } from '@/types';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
 import {
   Select,
   SelectContent,
@@ -15,9 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
-import { Settings, MessageSquare } from 'lucide-react';
-import { flushSync } from 'react-dom';
 
 const marked = new Marked({ breaks: true });
 const wsUrl = import.meta.env.DEV ? '/ws/chat' : 'wss://dkellerman--frank-serve.modal.run/ws/chat';
@@ -30,12 +30,16 @@ const MODELS = [
   { id: 'grok:grok-4', label: 'Grok 4' },
 ] as const;
 
+const CURSOR_HTML = `
+  <span class="mr-1" />
+  <span class="inline-block w-2 h-5 bg-gray-800 animate-pulse" style="animation-duration: 0.6s;" />
+`;
+
 function Home() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [model, setModel] = useState('google-gla:gemini-2.5-flash');
-  const [direct, setDirect] = useState(false);
 
   const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -45,9 +49,9 @@ function Home() {
       console.log('WebSocket connected');
       setLoading(true);
 
-      // send hello with session id
+      // send initialize with session id
       const sessionId = sessionStorage.getItem('frank.sessionId') ?? createNewSessionId();
-      sendJsonMessage({ type: 'hello', sessionId });
+      sendJsonMessage({ type: EventType.INITIALIZE, sessionId });
     },
     onClose: () => {
       console.log('WebSocket disconnected');
@@ -64,9 +68,10 @@ function Home() {
     if (!lastMessage) return;
     try {
       handleEvent(JSON.parse(lastMessage.data) as ChatEvent);
-    } catch (e) {
+    } catch {
       console.error('Failed to parse WebSocket message:', lastMessage.data);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastMessage]);
 
   useEffect(() => {
@@ -81,11 +86,11 @@ function Home() {
 
   async function handleEvent(event: ChatEvent) {
     console.log('Event received:', event);
-    if (event.type === 'error') {
+    if (event.type === EventType.ERROR) {
       throw new Error((event as ErrorEvent).detail);
-    } else if (event.type === 'reply') {
+    } else if (event.type === EventType.REPLY) {
       handleReply(event as ReplyEvent);
-    } else if (event.type === 'hello') {
+    } else if (event.type === EventType.INITIALIZE) {
       console.log('👋');
       setLoading(false);
     }
@@ -126,7 +131,7 @@ function Home() {
     });
     setInput('');
     scrollToBottom();
-    const event: SendEvent = { type: 'send', message, model, direct };
+    const event: SendEvent = { type: EventType.SEND, message, model };
     sendJsonMessage(event);
   }
 
@@ -151,13 +156,16 @@ function Home() {
     setInput('');
     const newSessionId = createNewSessionId();
     if (connected) {
-      sendJsonMessage({ type: 'hello', sessionId: newSessionId });
+      sendJsonMessage({ type: EventType.INITIALIZE, sessionId: newSessionId });
     }
   }
 
   return (
     <div className="flex h-screen">
-      <div className="w-16 bg-zinc-100 border-r border-zinc-200 flex flex-col items-center py-4 space-y-4">
+      <div
+        className="w-16 bg-zinc-100 border-r border-zinc-200 flex flex-col
+      items-center py-4 space-y-4"
+      >
         <Button
           variant="ghost"
           size="icon"
@@ -196,21 +204,6 @@ function Home() {
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="flex items-center space-x-3">
-                <Checkbox
-                  id="direct"
-                  checked={direct}
-                  onCheckedChange={(checked) => setDirect(checked as boolean)}
-                />
-                <label
-                  htmlFor="direct"
-                  className="text-sm font-medium text-zinc-600 leading-none
-                  peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Direct mode
-                </label>
-              </div>
             </div>
           </DrawerContent>
         </Drawer>
@@ -222,23 +215,19 @@ function Home() {
       >
         <h2 className="text-3xl">{`I’m Frank.`}</h2>
 
-        <Card className={clsx('w-full h-[80dvh] bg-zinc-50 p-4 flex flex-col')}>
+        <Card className={cn('w-full h-[80dvh] bg-zinc-50 p-4 flex flex-col')}>
           <div ref={messagesRef} className="flex-1 overflow-y-auto flex flex-col gap-2">
             {messages.map((message, idx: number) => (
               <div
                 key={idx}
-                className={clsx(
+                className={cn(
                   'prose prose-md p-4 rounded-md',
                   message.role === 'user' ? 'bg-blue-200' : 'bg-stone-100'
                 )}
                 dangerouslySetInnerHTML={{
                   __html:
                     marked.parse(message.content) +
-                    (loading && idx === messages.length - 1
-                      ? '<span class="mr-1"></span>' +
-                        '<span class="inline-block w-2 h-5 bg-gray-800 animate-pulse" ' +
-                        '  style="animation-duration: 0.6s;"></span>'
-                      : ''),
+                    (loading && idx === messages.length - 1 ? CURSOR_HTML : ''),
                 }}
               />
             ))}

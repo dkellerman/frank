@@ -1,17 +1,34 @@
 import enum
 from typing import Annotated, Literal
 from pydantic import BaseModel, Discriminator, Field
+from pydantic_ai.messages import ModelMessage
+
+
+class AgentQuery(BaseModel):
+    prompt: str
+    model: str
+    result: str | None = None
+
+
+class Session(BaseModel):
+    id: str
+    chat_history: list[ModelMessage] = Field(default_factory=list, alias="chatHistory")
+    cur_query: AgentQuery | None = Field(default=None, alias="curQuery")
+
+    class Config:
+        arbitrary_types_allowed = True
+        extra = "forbid"
 
 
 class EventType(str, enum.Enum):
-    HELLO = "hello"
+    INITIALIZE = "initialize"
     SEND = "send"
     REPLY = "reply"
     ERROR = "error"
 
 
-class HelloEvent(BaseModel):
-    type: Literal[EventType.HELLO] = EventType.HELLO
+class InitializeEvent(BaseModel):
+    type: Literal[EventType.INITIALIZE] = EventType.INITIALIZE
     session_id: str = Field(alias="sessionId")
 
 
@@ -35,6 +52,6 @@ class ErrorEvent(BaseModel):
 
 
 ChatEvent = Annotated[
-    HelloEvent | SendEvent | ReplyEvent | ErrorEvent,
+    InitializeEvent | SendEvent | ReplyEvent | ErrorEvent,
     Discriminator("type"),
 ]

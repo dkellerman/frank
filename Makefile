@@ -20,7 +20,7 @@ lint:
 	uv run ruff check --fix
 
 dev-all:
-	@cd client && npm run dev:all
+	cd client && npm run dev:all
 
 pydantic-to-typescript:
 	PYTHONPATH=. uv run pydantic2ts --module frank.models --output client/src/lib/pydantic-types.ts
