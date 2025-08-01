@@ -1,12 +1,10 @@
-import useWebSocket, { ReadyState } from 'react-use-websocket';
-import { flushSync } from 'react-dom';
-import { useState, useEffect, useRef } from 'react';
+import { useActionState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router';
 import { Settings, MessageSquare, Send } from 'lucide-react';
 import { Marked } from 'marked';
-import type { ChatEvent, ChatMessage, ErrorEvent, ReplyEvent, SendEvent } from '@/types';
-import { EventType } from '@/types';
+import { useStore } from '@/store';
 import { cn } from '@/lib/utils';
+import useChat from '@/hooks/useChat';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,15 +18,6 @@ import {
 } from '@/components/ui/select';
 
 const marked = new Marked({ breaks: true });
-const wsUrl = import.meta.env.DEV ? '/ws/chat' : 'wss://dkellerman--frank-serve.modal.run/ws/chat';
-
-const MODELS = [
-  { id: 'google-gla:gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
-  { id: 'anthropic:claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
-  { id: 'groq:meta-llama/llama-4-scout-17b-16e-instruct', label: 'Llama 4 Scout' },
-  { id: 'openai:gpt-4o', label: 'GPT-4o' },
-  { id: 'grok:grok-4', label: 'Grok 4' },
-] as const;
 
 const CURSOR_HTML = `
   <span class="mr-1" />
@@ -36,103 +25,44 @@ const CURSOR_HTML = `
 `;
 
 function Home() {
-  const [model, setModel] = useState('google-gla:gemini-2.5-flash');
-  const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { model, models, setModel, history } = useStore();
 
-  const messagesRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-
-  const { sendJsonMessage, lastMessage, readyState } = useWebSocket(wsUrl, {
-    onOpen: () => {
-      console.log('WebSocket connected');
-      setLoading(true);
-
-      // send initialize with session id
-      const sessionId = sessionStorage.getItem('frank.sessionId') ?? createNewSessionId();
-      sendJsonMessage({ type: EventType.INITIALIZE, sessionId });
+  const { loading, sending, connected, startNewChat, sendMessage } = useChat({
+    onReply: () => {
+      // clearInput();
+      scrollToBottom();
     },
-    onClose: () => {
-      console.log('WebSocket disconnected');
+    onUserMessage: () => {
+      scrollToBottom();
     },
-    onError: (error) => {
-      console.error('WebSocket error:', error);
+    onInitialized: () => {
+      scrollToBottom();
     },
-    shouldReconnect: () => true,
   });
 
-  const connected = readyState === ReadyState.OPEN;
+  // handle send form submitted
+  const [input, sendAction] = useActionState(async (prevState: string, formData: FormData) => {
+    const input = formData.get('input') as string;
+    if (!input?.trim() || !connected || loading || sending) return prevState;
+    await sendMessage(input);
+    return '';
+  }, '');
 
-  useEffect(() => {
-    if (!lastMessage) return;
-    try {
-      handleEvent(JSON.parse(lastMessage.data) as ChatEvent);
-    } catch {
-      console.error('Failed to parse WebSocket message:', lastMessage.data);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastMessage]);
+  const historyRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
+  // collapse input when cleared
   useEffect(() => {
     if (inputRef.current && input === '') {
       inputRef.current.style.height = 'auto';
     }
   }, [input]);
 
+  // focus input when mounted
   useEffect(() => {
     focusInput();
   }, [inputRef]);
-
-  async function handleEvent(event: ChatEvent) {
-    console.log('Event received:', event.type, event);
-    if (event.type === EventType.ERROR) {
-      throw new Error((event as ErrorEvent).detail);
-    } else if (event.type === EventType.REPLY) {
-      handleReply(event as ReplyEvent);
-    } else if (event.type === EventType.INITIALIZE) {
-      console.log('👋');
-      setLoading(false);
-    }
-  }
-
-  async function handleReply(event: ReplyEvent) {
-    if (event.text) {
-      const curMsg = messages[messages.length - 1];
-
-      setMessages((prev) =>
-        prev.map((msg, idx) =>
-          idx === messages.length - 1
-            ? {
-                ...msg,
-                content: curMsg.content + event.text,
-                timestamp: curMsg.timestamp || Date.now(),
-              }
-            : msg
-        )
-      );
-    }
-
-    if (event.done) {
-      setLoading(false);
-      focusInput();
-    }
-  }
-
-  async function sendMessage(message: string) {
-    setLoading(true);
-    flushSync(() => {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'user', content: message, timestamp: Date.now() },
-        { role: 'assistant', content: '', timestamp: 0 },
-      ]);
-    });
-    setInput('');
-    scrollToBottom();
-    const event: SendEvent = { type: EventType.SEND, message, model };
-    sendJsonMessage(event);
-  }
 
   function focusInput() {
     setTimeout(() => {
@@ -141,22 +71,11 @@ function Home() {
   }
 
   function scrollToBottom() {
-    messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior: 'smooth' });
+    historyRef.current?.scrollTo({ top: historyRef.current.scrollHeight, behavior: 'smooth' });
   }
 
-  function createNewSessionId() {
-    const sessionId = crypto.randomUUID();
-    sessionStorage.setItem('frank.sessionId', sessionId);
-    return sessionId;
-  }
-
-  function startNewChat() {
-    setMessages([]);
-    setInput('');
-    const newSessionId = createNewSessionId();
-    if (connected) {
-      sendJsonMessage({ type: EventType.INITIALIZE, sessionId: newSessionId });
-    }
+  function clearInput() {
+    if (inputRef.current) inputRef.current.value = '';
   }
 
   return (
@@ -192,12 +111,12 @@ function Home() {
             <div className="p-6 space-y-6">
               <div className="space-y-3">
                 <label className="text-sm font-medium text-zinc-700">Base Model</label>
-                <Select value={model} onValueChange={(value) => setModel(value)}>
+                <Select value={model.id} onValueChange={(value) => setModel(value)}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {MODELS.map((model) => (
+                    {models.map((model) => (
                       <SelectItem key={model.id} value={model.id}>
                         {model.label}
                       </SelectItem>
@@ -217,8 +136,8 @@ function Home() {
         <h2 className="text-3xl">{`I’m Frank.`}</h2>
 
         <Card className={cn('w-full h-[80dvh] bg-zinc-50 p-4 flex flex-col')}>
-          <div ref={messagesRef} className="flex-1 overflow-y-auto flex flex-col gap-2">
-            {messages.map((message, idx: number) => (
+          <div ref={historyRef} className="flex-1 overflow-y-auto flex flex-col gap-2">
+            {history.map((message, idx: number) => (
               <div
                 key={idx}
                 className={cn(
@@ -228,30 +147,28 @@ function Home() {
                 dangerouslySetInnerHTML={{
                   __html:
                     marked.parse(message.content) +
-                    (loading && idx === messages.length - 1 ? CURSOR_HTML : ''),
+                    (sending && idx === history.length - 1 ? CURSOR_HTML : ''),
                 }}
               />
             ))}
           </div>
 
-          <div className="flex flex-row gap-2">
+          <form ref={formRef} action={sendAction} className="flex flex-row gap-2">
             <Textarea
               ref={inputRef}
+              name="input"
               className="flex-1 resize-none min-h-[40px] max-h-[200px] rounded border
                border-zinc-300 px-3 py-2 text-base transition-all"
               rows={1}
-              value={input}
               onChange={(e) => {
-                setInput(e.target.value);
+                // expand
                 e.target.style.height = 'auto';
                 e.target.style.height = `${e.target.scrollHeight}px`;
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  if (input.trim() && !loading && connected) {
-                    sendMessage(input);
-                  }
+                  formRef.current?.requestSubmit();
                 }
               }}
               placeholder="Type your message..."
@@ -259,15 +176,13 @@ function Home() {
               disabled={!connected || loading}
             />
             <Button
-              onClick={() => {
-                if (input.trim() && !loading && connected) sendMessage(input);
-              }}
-              disabled={!connected || loading}
+              type="submit"
+              disabled={!connected || loading || sending}
               aria-label="Send message"
             >
               <Send className="w-5 h-5" />
             </Button>
-          </div>
+          </form>
         </Card>
       </main>
     </div>
