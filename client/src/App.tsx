@@ -2,7 +2,7 @@ import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { flushSync } from 'react-dom';
 import { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router';
-import { Settings, MessageSquare } from 'lucide-react';
+import { Settings, MessageSquare, Send } from 'lucide-react';
 import { Marked } from 'marked';
 import type { ChatEvent, ChatMessage, ErrorEvent, ReplyEvent, SendEvent } from '@/types';
 import { EventType } from '@/types';
@@ -36,10 +36,10 @@ const CURSOR_HTML = `
 `;
 
 function Home() {
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [model, setModel] = useState('google-gla:gemini-2.5-flash');
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -85,7 +85,7 @@ function Home() {
   }, [inputRef]);
 
   async function handleEvent(event: ChatEvent) {
-    console.log('Event received:', event);
+    console.log('Event received:', event.type, event);
     if (event.type === EventType.ERROR) {
       throw new Error((event as ErrorEvent).detail);
     } else if (event.type === EventType.REPLY) {
@@ -111,7 +111,6 @@ function Home() {
             : msg
         )
       );
-      scrollToBottom();
     }
 
     if (event.done) {
@@ -172,6 +171,7 @@ function Home() {
           className="h-12 w-12 hover:bg-zinc-200 transition-colors"
           onClick={startNewChat}
           title="New chat"
+          aria-label="New chat"
         >
           <MessageSquare className="h-6 w-6" />
         </Button>
@@ -183,6 +183,7 @@ function Home() {
               size="icon"
               className="h-12 w-12 hover:bg-zinc-200 transition-colors"
               title="Settings"
+              aria-label="Settings"
             >
               <Settings className="h-6 w-6" />
             </Button>
@@ -190,7 +191,7 @@ function Home() {
           <DrawerContent className="h-full w-80">
             <div className="p-6 space-y-6">
               <div className="space-y-3">
-                <label className="text-sm font-medium text-zinc-700">Model</label>
+                <label className="text-sm font-medium text-zinc-700">Base Model</label>
                 <Select value={model} onValueChange={(value) => setModel(value)}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
@@ -221,7 +222,7 @@ function Home() {
               <div
                 key={idx}
                 className={cn(
-                  'prose prose-md p-4 rounded-md',
+                  'prose prose-lg p-4 rounded-md',
                   message.role === 'user' ? 'bg-blue-200' : 'bg-stone-100'
                 )}
                 dangerouslySetInnerHTML={{
@@ -261,9 +262,10 @@ function Home() {
               onClick={() => {
                 if (input.trim() && !loading && connected) sendMessage(input);
               }}
-              disabled={!connected}
+              disabled={!connected || loading}
+              aria-label="Send message"
             >
-              Frank me
+              <Send className="w-5 h-5" />
             </Button>
           </div>
         </Card>
