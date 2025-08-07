@@ -1,12 +1,10 @@
 import asyncio
-import dotenv
 from typing import Awaitable, Callable, Any, AsyncGenerator
 from pydantic_ai import Agent
+from frank.core.config import settings
 from pydantic_ai.result import StreamedRunResult
 from pydantic_ai.messages import ModelMessage
-from frank.models import AgentQuery
-
-dotenv.load_dotenv()
+from frank.schemas import AgentQuery
 
 DEFAULT_BASE_MODEL = "google-gla:gemini-2.5-flash"
 
@@ -69,6 +67,7 @@ base_agent = Agent(
     DEFAULT_BASE_MODEL,
     system_prompt=SYSTEM_PROMPT,
     instrument=True,
+    # If GOOGLE_API_KEY is set, pydantic-ai will pick it up from env; no code change needed.
 )
 
 OnDoneCallback = Callable[[AgentQuery, StreamedRunResult], None | Awaitable[None]]

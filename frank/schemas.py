@@ -1,7 +1,7 @@
-import enum
-from typing import Annotated, Literal
-from pydantic import BaseModel, Discriminator, Field
+from pydantic import BaseModel, Field, Discriminator
 from pydantic_ai.messages import ModelMessage
+from typing import Annotated, Literal
+import enum
 
 
 class AgentQuery(BaseModel):
