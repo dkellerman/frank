@@ -1,7 +1,5 @@
-import asyncio
-from typing import Awaitable, Callable, Any, AsyncGenerator
+from typing import Awaitable, Callable, AsyncGenerator
 from pydantic_ai import Agent
-from frank.core.config import settings
 from pydantic_ai.result import StreamedRunResult
 from pydantic_ai.messages import ModelMessage
 from frank.schemas import AgentQuery
@@ -67,10 +65,9 @@ base_agent = Agent(
     DEFAULT_BASE_MODEL,
     system_prompt=SYSTEM_PROMPT,
     instrument=True,
-    # If GOOGLE_API_KEY is set, pydantic-ai will pick it up from env; no code change needed.
 )
 
-OnDoneCallback = Callable[[AgentQuery, StreamedRunResult], None | Awaitable[None]]
+OnDoneCallback = Callable[[AgentQuery, StreamedRunResult], Awaitable[None]]
 
 
 async def stream_agent_response(
@@ -91,13 +88,4 @@ async def stream_agent_response(
 
     if on_done:
         query.result = "".join(output)
-        await _call_maybe_async(on_done, query, result)
-
-
-async def _call_maybe_async(
-    func: Callable | Awaitable, *args: Any, **kwargs: Any
-) -> Any:
-    if asyncio.iscoroutinefunction(func):
-        return await func(*args, **kwargs)
-    else:
-        return func(*args, **kwargs)
+        await on_done(query, result)
