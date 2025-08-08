@@ -3,11 +3,15 @@ import type * as types from '@/lib/pydantic-types';
 export type ChatEvent =
   | types.ErrorEvent
   | types.InitializeEvent
+  | types.NewChatEvent
+  | types.NewChatAckEvent
   | types.ReplyEvent
   | types.SendEvent;
 
 export const EventType = {
   INITIALIZE: 'initialize',
+  NEW_CHAT: 'new_chat',
+  NEW_CHAT_ACK: 'new_chat_ack',
   REPLY: 'reply',
   SEND: 'send',
   ERROR: 'error',
@@ -28,7 +32,6 @@ export interface ChatModel {
 }
 
 export interface ChatState {
-  sessionId: string;
   history: ChatMessage[];
   setHistory: (history: ChatMessage[]) => void;
   clearHistory: () => void;

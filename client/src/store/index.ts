@@ -19,7 +19,6 @@ export const createSettingsSlice: StateCreator<SettingsState, [], [], SettingsSt
 });
 
 export const createChatSlice: StateCreator<ChatState, [], [], ChatState> = (set, get) => ({
-  sessionId: '',
   history: [],
   setHistory: (history: ChatMessage[]) => set({ history }),
   clearHistory: () => set({ history: [] }),

@@ -7,6 +7,9 @@ deploy: build
 dev:
 	uv run main.py
 
+devc:
+	cd client && npm run dev
+
 clai:
 	uv run clai -a frank.agents:agent
 

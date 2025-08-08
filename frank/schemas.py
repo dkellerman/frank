@@ -10,10 +10,11 @@ class AgentQuery(BaseModel):
     result: str | None = None
 
 
-class Session(BaseModel):
+class Chat(BaseModel):
     id: str
-    chat_history: list[ModelMessage] = Field(default_factory=list, alias="chatHistory")
+    history: list[ModelMessage] = Field(default_factory=list, alias="history")
     cur_query: AgentQuery | None = Field(default=None, alias="curQuery")
+    pending: bool = False
 
     class Config:
         arbitrary_types_allowed = True
@@ -23,20 +24,33 @@ class Session(BaseModel):
 class EventType(str, enum.Enum):
     INITIALIZE = "initialize"
     SEND = "send"
+    NEW_CHAT = "new_chat"
+    NEW_CHAT_ACK = "new_chat_ack"
     REPLY = "reply"
     ERROR = "error"
 
 
 class InitializeEvent(BaseModel):
     type: Literal[EventType.INITIALIZE] = EventType.INITIALIZE
-    session_id: str = Field(alias="sessionId")
+    chat_id: str | None = Field(default=None, alias="chatId")
 
 
 class SendEvent(BaseModel):
     type: Literal[EventType.SEND] = EventType.SEND
+    chat_id: str = Field(alias="chatId")
     message: str
     model: str | None
-    direct: bool = False
+
+
+class NewChatEvent(BaseModel):
+    type: Literal[EventType.NEW_CHAT] = EventType.NEW_CHAT
+    message: str
+    model: str
+
+
+class NewChatAckEvent(BaseModel):
+    type: Literal[EventType.NEW_CHAT_ACK] = EventType.NEW_CHAT_ACK
+    chat_id: str = Field(alias="chatId")
 
 
 class ReplyEvent(BaseModel):
@@ -52,6 +66,11 @@ class ErrorEvent(BaseModel):
 
 
 ChatEvent = Annotated[
-    InitializeEvent | SendEvent | ReplyEvent | ErrorEvent,
+    InitializeEvent
+    | NewChatEvent
+    | NewChatAckEvent
+    | SendEvent
+    | ReplyEvent
+    | ErrorEvent,
     Discriminator("type"),
 ]

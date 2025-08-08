@@ -1,9 +1,17 @@
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { flushSync } from 'react-dom';
 import { useState, useEffect } from 'react';
-import type { ChatEvent, ErrorEvent, ReplyEvent, SendEvent } from '@/types';
+import type {
+  ChatEvent,
+  ErrorEvent,
+  ReplyEvent,
+  SendEvent,
+  NewChatAckEvent,
+  NewChatEvent,
+} from '@/types';
 import { EventType } from '@/types';
 import { useStore } from '@/store';
+import { useNavigate, useParams } from 'react-router';
 
 const wsUrl = import.meta.env.DEV ? '/ws/chat' : 'wss://dkellerman--frank-serve.modal.run/ws/chat';
 
@@ -17,15 +25,17 @@ export default function useChat({ onReply, onUserMessage, onInitialized }: UseCh
   const [loading, setLoading] = useState(false); // page loading
   const [sending, setSending] = useState(false); // sending message and awaiting response
   const { model, history, addMessage, clearHistory, setHistory } = useStore();
+  const navigate = useNavigate();
+  const params = useParams<{ id?: string }>();
+  const chatId = params.id;
 
   const { sendJsonMessage, lastMessage, readyState } = useWebSocket(wsUrl, {
     onOpen: () => {
       console.log('WebSocket connected');
       setLoading(true);
 
-      // send initialize with session id
-      const sessionId = sessionStorage.getItem('frank.sessionId') ?? createNewSessionId();
-      sendJsonMessage({ type: EventType.INITIALIZE, sessionId });
+      // send initialize: include chatId if on /chats/:id
+      sendJsonMessage({ type: EventType.INITIALIZE, chatId });
     },
     onClose: () => {
       console.log('WebSocket disconnected');
@@ -42,7 +52,8 @@ export default function useChat({ onReply, onUserMessage, onInitialized }: UseCh
   useEffect(() => {
     if (!lastMessage) return;
     try {
-      handleEvent(JSON.parse(lastMessage.data) as ChatEvent);
+      const ev = JSON.parse(lastMessage.data) as ChatEvent;
+      handleEvent(ev);
     } catch {
       console.error('Failed to parse WebSocket message:', lastMessage.data);
     }
@@ -60,6 +71,9 @@ export default function useChat({ onReply, onUserMessage, onInitialized }: UseCh
       console.log('👋');
       setLoading(false);
       onInitialized?.();
+    } else if (event.type === EventType.NEW_CHAT_ACK) {
+      const { chatId } = event as NewChatAckEvent;
+      navigate(`/chats/${chatId}`);
     }
   }
 
@@ -93,22 +107,18 @@ export default function useChat({ onReply, onUserMessage, onInitialized }: UseCh
     setSending(true);
     onUserMessage?.(message);
 
-    const event: SendEvent = { type: EventType.SEND, message, model: model.id };
-    sendJsonMessage(event);
-  }
-
-  function createNewSessionId() {
-    const sessionId = crypto.randomUUID();
-    sessionStorage.setItem('frank.sessionId', sessionId);
-    return sessionId;
+    if (chatId) {
+      const event: SendEvent = { type: EventType.SEND, chatId, message, model: model.id };
+      sendJsonMessage(event);
+    } else {
+      const newChat: NewChatEvent = { type: EventType.NEW_CHAT, message, model: model.id };
+      sendJsonMessage(newChat);
+    }
   }
 
   function startNewChat() {
     clearHistory();
-    const newSessionId = createNewSessionId();
-    if (connected) {
-      sendJsonMessage({ type: EventType.INITIALIZE, sessionId: newSessionId });
-    }
+    navigate('/');
   }
 
   return { loading, sending, connected, startNewChat, sendMessage };

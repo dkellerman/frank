@@ -10,30 +10,11 @@ export interface AgentQuery {
   model: string;
   result?: string | null;
 }
-export interface ErrorEvent {
-  type?: 'error';
-  code: string;
-  detail: string;
-}
-export interface InitializeEvent {
-  type?: 'initialize';
-  sessionId: string;
-}
-export interface ReplyEvent {
-  type?: 'reply';
-  text?: string;
-  done?: boolean;
-}
-export interface SendEvent {
-  type?: 'send';
-  message: string;
-  model: string | null;
-  direct?: boolean;
-}
-export interface Session {
+export interface Chat {
   id: string;
-  chatHistory?: (ModelRequest | ModelResponse)[];
+  history?: (ModelRequest | ModelResponse)[];
   curQuery?: AgentQuery | null;
+  pending?: boolean;
 }
 export interface ModelRequest {
   parts: (SystemPromptPart | UserPromptPart | ToolReturnPart | RetryPromptPart)[];
@@ -188,4 +169,33 @@ export interface Usage {
     [k: string]: number;
   } | null;
   [k: string]: unknown;
+}
+export interface ErrorEvent {
+  type?: 'error';
+  code: string;
+  detail: string;
+}
+export interface InitializeEvent {
+  type?: 'initialize';
+  chatId?: string | null;
+}
+export interface NewChatAckEvent {
+  type?: 'new_chat_ack';
+  chatId: string;
+}
+export interface NewChatEvent {
+  type?: 'new_chat';
+  message: string;
+  model: string;
+}
+export interface ReplyEvent {
+  type?: 'reply';
+  text?: string;
+  done?: boolean;
+}
+export interface SendEvent {
+  type?: 'send';
+  chatId: string;
+  message: string;
+  model: string | null;
 }
