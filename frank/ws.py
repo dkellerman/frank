@@ -20,9 +20,9 @@ from frank.schemas import (
 )
 
 
-IGNORE_ERRORS = [
+IGNORE_ERRORS = {
     "Cannot call 'receive' once a disconnect message has been received",
-]
+}
 
 
 router = APIRouter()
@@ -97,7 +97,7 @@ async def handle_new_chat(ws: WebSocket, event: NewChatEvent):
     chat = Chat(id=chat_id, pending=True)
     chat.cur_query = AgentQuery(prompt=event.message, model=event.model)
     await save_chat(chat)
-    await send_to_user(ws, NewChatAckEvent(chat_id=chat_id))
+    await send_to_user(ws, NewChatAckEvent(chatId=chat_id))
 
 
 async def handle_send(ws: WebSocket, event: SendEvent, chat: Chat | None):

@@ -1,6 +1,6 @@
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { flushSync } from 'react-dom';
-import { useState, useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import type {
   ChatEvent,
   ErrorEvent,
@@ -8,6 +8,8 @@ import type {
   SendEvent,
   NewChatAckEvent,
   NewChatEvent,
+  Chat,
+  ChatMessage,
 } from '@/types';
 import { EventType } from '@/types';
 import { useStore } from '@/store';
@@ -22,8 +24,6 @@ type UseChatProps = {
 };
 
 export default function useChat({ onReply, onUserMessage, onInitialized }: UseChatProps) {
-  const [loading, setLoading] = useState(false); // page loading
-  const [sending, setSending] = useState(false); // sending message and awaiting response
   const { model, history, addMessage, clearHistory, setHistory } = useStore();
   const navigate = useNavigate();
   const params = useParams<{ id?: string }>();
@@ -31,24 +31,42 @@ export default function useChat({ onReply, onUserMessage, onInitialized }: UseCh
 
   const { sendJsonMessage, lastMessage, readyState } = useWebSocket(wsUrl, {
     onOpen: () => {
-      console.log('WebSocket connected');
-      setLoading(true);
-
-      // send initialize: include chatId if on /chats/:id
+      useStore.setState({ loading: true });
       sendJsonMessage({ type: EventType.INITIALIZE, chatId });
-    },
-    onClose: () => {
-      console.log('WebSocket disconnected');
-    },
-    onError: (error) => {
-      console.error('WebSocket error:', error);
+      console.log('[useChat] ws open');
     },
     shouldReconnect: () => true,
   });
 
-  const connected = readyState === ReadyState.OPEN;
+  useEffect(() => {
+    useStore.setState({ connected: readyState === ReadyState.OPEN });
+  }, [readyState]);
 
-  // handle incoming websocket events
+  const sendMessage = useCallback(
+    async (message: string) => {
+      flushSync(() => {
+        addMessage({ role: 'user', content: message, timestamp: Date.now() });
+        addMessage({ role: 'assistant', content: '', timestamp: 0 });
+      });
+      useStore.setState({ sending: true });
+      onUserMessage?.(message);
+
+      if (chatId) {
+        const event: SendEvent = { type: EventType.SEND, chatId, message, model: model.id };
+        sendJsonMessage(event);
+      } else {
+        const newChat: NewChatEvent = { type: EventType.NEW_CHAT, message, model: model.id };
+        sendJsonMessage(newChat);
+      }
+    },
+    [addMessage, chatId, model.id, onUserMessage, sendJsonMessage]
+  );
+
+  const startNewChat = useCallback(() => {
+    clearHistory();
+    navigate('/');
+  }, [clearHistory, navigate]);
+
   useEffect(() => {
     if (!lastMessage) return;
     try {
@@ -60,16 +78,20 @@ export default function useChat({ onReply, onUserMessage, onInitialized }: UseCh
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastMessage]);
 
-  // handle incoming websocket events
   async function handleEvent(event: ChatEvent) {
-    console.log('Event received:', event.type, event);
+    if (
+      event.type === EventType.REPLY ||
+      event.type === EventType.ERROR ||
+      event.type === EventType.NEW_CHAT_ACK
+    ) {
+      console.log('[useChat] event', event.type);
+    }
     if (event.type === EventType.ERROR) {
       throw new Error((event as ErrorEvent).detail);
     } else if (event.type === EventType.REPLY) {
       handleReply(event as ReplyEvent);
     } else if (event.type === EventType.INITIALIZE) {
-      console.log('👋');
-      setLoading(false);
+      useStore.setState({ loading: false });
       onInitialized?.();
     } else if (event.type === EventType.NEW_CHAT_ACK) {
       const { chatId } = event as NewChatAckEvent;
@@ -77,49 +99,54 @@ export default function useChat({ onReply, onUserMessage, onInitialized }: UseCh
     }
   }
 
-  // handle incoming reply events
   async function handleReply(event: ReplyEvent) {
     if (event.text) {
-      const curMsg = history[history.length - 1];
-      setHistory([
-        ...history.slice(0, -1),
-        {
-          ...curMsg,
-          content: curMsg.content + event.text,
-          timestamp: curMsg.timestamp || Date.now(),
-        },
-      ]);
+      const lastMsg = history[history.length - 1];
+      if (lastMsg && lastMsg.role === 'assistant') {
+        setHistory([
+          ...history.slice(0, -1),
+          {
+            ...lastMsg,
+            content: lastMsg.content + event.text,
+            timestamp: lastMsg.timestamp || Date.now(),
+          },
+        ]);
+      } else {
+        setHistory([...history, { role: 'assistant', content: event.text, timestamp: Date.now() }]);
+      }
     }
-
     if (event.done) {
-      setSending(false);
+      useStore.setState({ sending: false });
       onReply?.(event);
     }
   }
 
-  // send message to server
-  async function sendMessage(message: string) {
-    flushSync(() => {
-      addMessage({ role: 'user', content: message, timestamp: Date.now() });
-      addMessage({ role: 'assistant', content: '', timestamp: 0 });
-    });
+  const loadHistory = useCallback(
+    async (chatId: string) => {
+      const resp = await fetch(`/api/chats/${chatId}`);
+      const data: Chat = await resp.json();
+      const messages: ChatMessage[] = (data.history ?? []).map((m) => {
+        const parts = (m.parts ?? []).filter((p) =>
+          m.kind === 'request' ? p.part_kind === 'user-prompt' : p.part_kind === 'text'
+        );
+        const ts = parts[0]?.timestamp as string;
+        return {
+          role: m.kind === 'request' ? 'user' : 'assistant',
+          content: parts
+            .map((p) => p.content as string)
+            .join('')
+            .trim(),
+          timestamp: ts ? Date.parse(ts) : Date.now(),
+        };
+      });
+      if (!messages?.length && data.curQuery?.prompt)
+        messages.push({ role: 'user', content: data.curQuery.prompt, timestamp: Date.now() });
+      setHistory(messages);
+    },
+    [setHistory]
+  );
 
-    setSending(true);
-    onUserMessage?.(message);
-
-    if (chatId) {
-      const event: SendEvent = { type: EventType.SEND, chatId, message, model: model.id };
-      sendJsonMessage(event);
-    } else {
-      const newChat: NewChatEvent = { type: EventType.NEW_CHAT, message, model: model.id };
-      sendJsonMessage(newChat);
-    }
-  }
-
-  function startNewChat() {
-    clearHistory();
-    navigate('/');
-  }
-
-  return { loading, sending, connected, startNewChat, sendMessage };
+  useEffect(() => {
+    useStore.setState({ startNewChat, sendMessage, loadHistory });
+  }, [startNewChat, sendMessage, loadHistory]);
 }

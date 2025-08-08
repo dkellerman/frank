@@ -5,6 +5,19 @@
     <link rel="icon" type="image/png" href="/favicon.png?v=0" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Frank</title>
+    <script>
+      (function () {
+        var root = document.documentElement;
+        var media = window.matchMedia('(prefers-color-scheme: dark)');
+        var apply = function () {
+          if (media.matches) root.classList.add('dark');
+          else root.classList.remove('dark');
+        };
+        apply();
+        if (media.addEventListener) media.addEventListener('change', apply);
+        else if (media.addListener) media.addListener(apply);
+      })();
+    </script>
   </head>
 
   <body>

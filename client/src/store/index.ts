@@ -23,6 +23,12 @@ export const createChatSlice: StateCreator<ChatState, [], [], ChatState> = (set,
   setHistory: (history: ChatMessage[]) => set({ history }),
   clearHistory: () => set({ history: [] }),
   addMessage: (message: ChatMessage) => set({ history: [...get().history, message] }),
+  loading: false,
+  sending: false,
+  connected: false,
+  startNewChat: () => {},
+  sendMessage: () => {},
+  loadHistory: async () => {},
 });
 
 export const useStore = create<StoreState>()(

@@ -36,6 +36,12 @@ export interface ChatState {
   setHistory: (history: ChatMessage[]) => void;
   clearHistory: () => void;
   addMessage: (message: ChatMessage) => void;
+  loading: boolean;
+  sending: boolean;
+  connected: boolean;
+  startNewChat: () => void;
+  sendMessage: (message: string) => void;
+  loadHistory: (chatId: string) => Promise<void>;
 }
 
 export interface SettingsState {
