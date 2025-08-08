@@ -11,7 +11,7 @@ type Props = {
 
 const CURSOR_HTML = `
   <span class="mr-1" />
-  <span class="inline-block w-2 h-5 bg-gray-800 animate-pulse" style="animation-duration: 0.6s;" />
+  <span class="inline-block w-2 h-5 bg-secondary-foreground animate-pulse" style="animation-duration: 0.6s;" />
 `;
 
 export default function Message({ role, content, showCursor }: Props) {

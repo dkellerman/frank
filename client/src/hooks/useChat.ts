@@ -139,8 +139,10 @@ export default function useChat({ onReply, onUserMessage, onInitialized }: UseCh
           timestamp: ts ? Date.parse(ts) : Date.now(),
         };
       });
-      if (!messages?.length && data.curQuery?.prompt)
+      if (!messages?.length && data.curQuery?.prompt) {
         messages.push({ role: 'user', content: data.curQuery.prompt, timestamp: Date.now() });
+        if (data.pending) messages.push({ role: 'assistant', content: '', timestamp: 0 });
+      }
       setHistory(messages);
     },
     [setHistory]
