@@ -9,17 +9,21 @@ import { useEffect, useState } from 'react';
 import { useStore } from '@/store';
 
 export default function Chat() {
-  useChat({});
+  useChat();
+
   const { id } = useParams<{ id: string }>();
   const { loadHistory } = useStore();
   const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
     if (id) loadHistory(id);
   }, [id, loadHistory]);
+
   useEffect(() => {
     const id = requestAnimationFrame(() => setMounted(true));
     return () => cancelAnimationFrame(id);
   }, []);
+
   return (
     <div className={cn('flex h-screen flex-col overflow-hidden')}>
       <NavBar />

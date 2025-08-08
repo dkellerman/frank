@@ -17,13 +17,7 @@ import { useNavigate, useParams } from 'react-router';
 
 const wsUrl = import.meta.env.DEV ? '/ws/chat' : 'wss://dkellerman--frank-serve.modal.run/ws/chat';
 
-type UseChatProps = {
-  onReply?: (event: ReplyEvent) => void;
-  onUserMessage?: (message: string) => void;
-  onInitialized?: () => void;
-};
-
-export default function useChat({ onReply, onUserMessage, onInitialized }: UseChatProps) {
+export default function useChat() {
   const { model, history, addMessage, clearHistory, setHistory } = useStore();
   const navigate = useNavigate();
   const params = useParams<{ id?: string }>();
@@ -49,7 +43,6 @@ export default function useChat({ onReply, onUserMessage, onInitialized }: UseCh
         addMessage({ role: 'assistant', content: '', timestamp: 0 });
       });
       useStore.setState({ sending: true });
-      onUserMessage?.(message);
 
       if (chatId) {
         const event: SendEvent = { type: EventType.SEND, chatId, message, model: model.id };
@@ -59,7 +52,7 @@ export default function useChat({ onReply, onUserMessage, onInitialized }: UseCh
         sendJsonMessage(newChat);
       }
     },
-    [addMessage, chatId, model.id, onUserMessage, sendJsonMessage]
+    [addMessage, chatId, model.id, sendJsonMessage]
   );
 
   const startNewChat = useCallback(() => {
@@ -92,7 +85,6 @@ export default function useChat({ onReply, onUserMessage, onInitialized }: UseCh
       handleReply(event as ReplyEvent);
     } else if (event.type === EventType.INITIALIZE) {
       useStore.setState({ loading: false });
-      onInitialized?.();
     } else if (event.type === EventType.NEW_CHAT_ACK) {
       const { chatId } = event as NewChatAckEvent;
       navigate(`/chats/${chatId}`);
@@ -117,7 +109,6 @@ export default function useChat({ onReply, onUserMessage, onInitialized }: UseCh
     }
     if (event.done) {
       useStore.setState({ sending: false });
-      onReply?.(event);
     }
   }
 

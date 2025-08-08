@@ -28,8 +28,15 @@ export default function ChatInput({ placeholder = 'Type your message...' }: Prop
 
   useEffect(() => {
     if (inputRef.current && input === '') inputRef.current.style.height = 'auto';
-    setTimeout(() => inputRef.current?.focus(), 100);
   }, [input]);
+
+  useEffect(() => {
+    if (!sending && !loading) focusInput();
+  }, [loading, sending]);
+
+  function focusInput() {
+    setTimeout(() => inputRef.current?.focus(), 100);
+  }
 
   return (
     <form

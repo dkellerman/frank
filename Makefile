@@ -2,7 +2,7 @@ build:
 	cd client && npm run build
 
 deploy: build
-	uv run modal deploy modal.py
+	uv run modal deploy modal_app.py
 
 dev:
 	uv run main.py

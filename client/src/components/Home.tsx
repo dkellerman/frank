@@ -6,12 +6,15 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 export default function Home() {
-  useChat({});
+  useChat();
+
   const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
     const id = requestAnimationFrame(() => setMounted(true));
     return () => cancelAnimationFrame(id);
   }, []);
+
   return (
     <div className={cn('flex h-screen flex-col')}>
       <NavBar />
