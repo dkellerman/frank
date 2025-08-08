@@ -2,43 +2,11 @@ import { MessageSquare, Moon, Sun, Monitor } from 'lucide-react';
 import { useStore } from '@/store';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useEffect, useMemo, useState } from 'react';
+import { useTheme } from '@/hooks/useTheme';
 
 export default function NavBar() {
   const { startNewChat } = useStore();
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
-    const stored = localStorage.getItem('theme');
-    return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
-  });
-
-  const media = useMemo(() => window.matchMedia('(prefers-color-scheme: dark)'), []);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const applyTheme = () => {
-      if (theme === 'dark') root.classList.add('dark');
-      else if (theme === 'light') root.classList.remove('dark');
-      else if (media.matches) root.classList.add('dark');
-      else root.classList.remove('dark');
-    };
-    localStorage.setItem('theme', theme);
-    applyTheme();
-    if (theme === 'system') {
-      const onChange = () => applyTheme();
-      if (media.addEventListener) media.addEventListener('change', onChange);
-      else media.addListener(onChange);
-      return () => {
-        if (media.removeEventListener) media.removeEventListener('change', onChange);
-        else media.removeListener(onChange);
-      };
-    }
-  }, [theme, media]);
-
-  const cycleTheme = () => {
-    if (theme === 'light') setTheme('dark');
-    else if (theme === 'dark') setTheme('system');
-    else setTheme('light');
-  };
+  const { theme, cycleTheme } = useTheme();
 
   return (
     <div
