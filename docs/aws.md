@@ -1,9 +1,9 @@
 # AWS Deployment (EC2 + S3/CloudFront) with Cloudflare
 
 This guide deploys:
-- FastAPI backend on a free-tier EC2 instance behind nginx (HTTP on port 80)
+- FastAPI backend on a free-tier EC2 instance served directly by `uvicorn` on localhost (no nginx)
 - React client built with Vite to S3, served via CloudFront
-- Cloudflare proxy in front of both, on a single domain
+- Cloudflare proxy in front of both, on a single domain, using a Worker for path routing
 
 ## Prerequisites
 - AWS account with programmatic credentials
@@ -35,8 +35,7 @@ Do not duplicate these elsewhere; the backend reads from `${EC2_APP_DIR}/.env` o
 
 3. EC2 instance for the backend
    - Ubuntu (t2.micro, free-tier) with a public IP
-   - Open inbound: TCP 22 (SSH) and TCP 80 (HTTP)
-   - Upload your SSH key (PEM) to GitHub as a secret
+   - Open inbound: TCP 22 (SSH) and TCP 8000 (if you prefer direct Worker-to-port). Alternatively, run a local tunnel or set up firewall rules as needed.
 
 ## GitHub Secrets
 Set these in your repo Settings → Secrets and variables → Actions:
@@ -49,6 +48,7 @@ Set these in your repo Settings → Secrets and variables → Actions:
 - EC2_USER (e.g., ubuntu)
 - EC2_APP_DIR (e.g., /opt/frank)
 - EC2_SSH_KEY (paste contents of your private key for EC2)
+- SERVICE_NAME (systemd unit name running uvicorn, e.g., `frank`)
 
 The backend reads configuration from a single file on the EC2 host: `${EC2_APP_DIR}/.env`. Upload it once:
 
@@ -61,11 +61,13 @@ scp .env ${EC2_USER}@${EC2_HOST}:${EC2_APP_DIR}/.env
   - Build with Vite and upload to S3
   - Invalidate CloudFront for `index.html` and `/assets/*`
 - Server:
-  - Copy `main.py`, `frank/`, `requirements.txt`, and `.env.example` to EC2 under `EC2_APP_DIR`
-  - Run `infra/server/setup_ec2.sh` remotely to install Python deps, create systemd service, and configure nginx reverse proxy for `/api` and `/ws`
+  - Rsync `main.py`, `frank/`, `pyproject.toml`, and `.env` to EC2 under `EC2_APP_DIR`
+  - Use `uv sync` on the host to install/update dependencies, then restart the systemd service running `uvicorn`
 
 ## Run a deployment
-- Push to `main` or manually run the workflow: Actions → Deploy → Run workflow
+- Push to `main` or manually run the workflows:
+  - Client: Deploy Client
+  - Server: Deploy Server
 
 ## Cloudflare configuration (single domain for static + API/WS)
 Use Cloudflare to serve everything on one hostname (e.g., `app.example.com`):
@@ -80,7 +82,7 @@ Use Cloudflare to serve everything on one hostname (e.g., `app.example.com`):
 export default {
   async fetch(request) {
     const url = new URL(request.url);
-    const EC2_ORIGIN = 'http://<EC2_PUBLIC_IP>'; // nginx serves /api and /ws
+    const EC2_ORIGIN = 'http://<EC2_PUBLIC_IP>:8000'; // uvicorn serves /api and /ws
     const CLOUDFRONT_ORIGIN = 'https://<CLOUDFRONT_DOMAIN>'; // static SPA
 
     if (url.pathname.startsWith('/api') || url.pathname.startsWith('/ws')) {
@@ -88,16 +90,9 @@ export default {
       const target = new URL(url.pathname + url.search, EC2_ORIGIN);
       const upgradeHeader = request.headers.get('Upgrade') || '';
       if (upgradeHeader.toLowerCase() === 'websocket') {
-        return fetch(target, {
-          headers: request.headers,
-          method: request.method,
-        });
+        return fetch(target, { headers: request.headers, method: request.method });
       }
-      return fetch(target, {
-        headers: request.headers,
-        method: request.method,
-        body: request.body,
-      });
+      return fetch(target, { headers: request.headers, method: request.method, body: request.body });
     }
 
     // Otherwise go to CloudFront for SPA
@@ -107,18 +102,17 @@ export default {
 };
 ```
 
-- SSL/TLS: Full (recommended). Cloudflare terminates TLS for users; EC2 listens on HTTP behind Cloudflare.
+- SSL/TLS: Full (recommended). Cloudflare terminates TLS for users.
 
 ## Local testing
 - `make dev` starts the FastAPI server at 127.0.0.1:8000
 - `make devc` starts the client and proxies `/api` and `/ws` to the server
 
 ## Notes
-- Python version pinned to 3.11 to match common EC2 images
-- The service listens on 127.0.0.1:8000; nginx exposes port 80 for `/api` and `/ws`
-- The SPA is served from CloudFront/S3; nginx is not serving static files
+- Python version: 3.13 (matches the project)
+- The service listens on 127.0.0.1:8000 or 0.0.0.0:8000 depending on your systemd unit; Cloudflare Worker connects to the EC2 public IP and port 8000.
+- The SPA is served from CloudFront/S3
 
 ## Troubleshooting
-- Check systemd: `sudo systemctl status frank` and `sudo journalctl -u frank -e`
-- Nginx: `sudo nginx -t` and `sudo tail -f /var/log/nginx/error.log`
-- Health: `curl http://<EC2_PUBLIC_IP>/api/healthz`
+- Check systemd: `sudo systemctl status <SERVICE_NAME>` and `sudo journalctl -u <SERVICE_NAME> -e`
+- Health: `curl http://127.0.0.1:8000/api/healthz` on the EC2 host

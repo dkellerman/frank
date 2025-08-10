@@ -3,7 +3,7 @@ name = "frank"
 version = "0.1.0"
 description = "Frank chat"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.116.1",
     "httpx>=0.28.1",
