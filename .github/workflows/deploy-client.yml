@@ -1,0 +1,40 @@
+name: Deploy Client
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'client/**'
+
+permissions:
+  contents: read
+
+jobs:
+  client:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      S3_BUCKET: ${{ secrets.S3_BUCKET }}
+      CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: client/.nvmrc
+      - name: Build client
+        working-directory: client
+        run: |
+          npm ci
+          npm run build
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Sync to S3 and invalidate CloudFront
+        run: |
+          aws s3 sync client/dist s3://${{ env.S3_BUCKET }} --delete --cache-control max-age=31536000,public --exclude index.html
+          aws s3 cp client/dist/index.html s3://${{ env.S3_BUCKET }}/index.html --cache-control no-cache,public --content-type text/html
+          if [ -n "${{ env.CLOUDFRONT_DISTRIBUTION_ID }}" ]; then aws cloudfront create-invalidation --distribution-id "${{ env.CLOUDFRONT_DISTRIBUTION_ID }}" --paths "/index.html" "/assets/*"; fi

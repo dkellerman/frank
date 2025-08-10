@@ -15,7 +15,7 @@ import { EventType } from '@/types';
 import { useStore } from '@/store';
 import { useNavigate, useParams } from 'react-router';
 
-const wsUrl = import.meta.env.DEV ? '/ws/chat' : 'wss://dkellerman--frank-serve.modal.run/ws/chat';
+const wsUrl = '/ws/chat';
 
 export default function useChat() {
   const { model, history, addMessage, clearHistory, setHistory } = useStore();
