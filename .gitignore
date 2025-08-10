@@ -6,7 +6,6 @@ wheels/
 *.egg-info
 .venv
 .env*
-!.env.example
 local/
 .DS_Store
 .vscode
