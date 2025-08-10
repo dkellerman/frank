@@ -48,6 +48,7 @@ jobs:
             UPSTASH_REDIS_REST_URL='${{ secrets.UPSTASH_REDIS_REST_URL }}' \
             UPSTASH_REDIS_REST_TOKEN='${{ secrets.UPSTASH_REDIS_REST_TOKEN }}' \
             OPENROUTER_API_KEY='${{ secrets.OPENROUTER_API_KEY }}' \
+            PROMPTLAYER_API_KEY='${{ secrets.PROMPTLAYER_API_KEY }}' \
             nohup uv run uvicorn main:app --host 0.0.0.0 --port 8000 >/dev/null 2>&1 & \
           "
 

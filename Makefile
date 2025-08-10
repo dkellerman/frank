@@ -11,7 +11,7 @@ devc:
 	cd client && npm run dev
 
 clai:
-	uv run clai -a frank.agents:default_agent
+	uv run clai -a frank.agents:base_agent
 
 lint:
 	uv run ruff check --fix
