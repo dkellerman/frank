@@ -16,12 +16,14 @@ export default function Home() {
   }, []);
 
   return (
-    <div className={cn('flex h-screen flex-col')}>
+    <div className={cn('flex min-h-dvh flex-col')}>
       <NavBar />
       <main
         className={cn(
-          'flex-1 p-6 flex flex-col items-center justify-start md:justify-center gap-4',
-          'w-full h-full min-w-[300px] max-w-[700px] m-auto transition-all duration-300 ease-out',
+          'flex-1 p-6 pt-16 pb-[max(1rem,env(safe-area-inset-bottom))]',
+          'flex flex-col items-center justify-start md:justify-center gap-4',
+          'w-full h-full min-w-[300px] max-w-[700px] m-auto transition-all',
+          'duration-300 ease-out',
           mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
         )}
       >
@@ -32,7 +34,7 @@ export default function Home() {
             'sm:bg-secondary sm:p-4 sm:border sm:rounded-xl sm:shadow-lg'
           )}
         >
-          <ChatInput placeholder="Start a new chat..." />
+          <ChatInput placeholder="What can I do you for?" />
         </Card>
       </main>
     </div>
