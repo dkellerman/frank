@@ -6,6 +6,7 @@ const MODELS: ChatModel[] = [
   { id: 'openrouter:openai/gpt-5', label: 'GPT-5' },
   { id: 'openrouter:openai/gpt-5-mini', label: 'GPT-5 Mini' },
   { id: 'openrouter:openai/gpt-5-nano', label: 'GPT-5 Nano', isDefault: true },
+  { id: 'openrouter:openai/gpt-oss-20b', label: 'GPT-OSS 20B (small)' },
   { id: 'openrouter:anthropic/claude-4.1', label: 'Claude 4.1' },
   { id: 'openrouter:meta-llama/llama-3.1-8b-instruct:free', label: 'Llama 3.1 8B (free)' },
 ];
