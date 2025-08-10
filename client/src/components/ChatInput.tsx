@@ -14,7 +14,7 @@ import {
 
 type Props = { placeholder?: string };
 
-export default function ChatInput({ placeholder = 'Type your message...' }: Props) {
+export default function ChatInput({ placeholder = "What can I do you for?" }: Props) {
   const { connected, loading, sending, sendMessage, model, models, setModel } = useStore();
   const [input, sendAction] = useActionState(async (prevState: string, formData: FormData) => {
     const value = formData.get('input') as string;
@@ -49,7 +49,7 @@ export default function ChatInput({ placeholder = 'Type your message...' }: Prop
           ref={inputRef}
           name="input"
           className={cn(
-            'flex-1 w-full resize-none min-h-[56px] max-h-[50vh] rounded-2xl',
+            'flex-1 w-full resize-none min-h-[56px] max-h-[40svh] rounded-2xl',
             'border border-input bg-white px-4 py-3 pr-12 text-lg transition-all'
           )}
           rows={1}
