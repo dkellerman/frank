@@ -4,7 +4,7 @@ from pydantic_ai.result import StreamedRunResult
 from pydantic_ai.messages import ModelMessage
 from frank.schemas import AgentQuery
 
-DEFAULT_BASE_MODEL = "google-gla:gemini-2.5-flash"
+DEFAULT_BASE_MODEL = "openrouter:openai/gpt-5-nano"
 
 SYSTEM_PROMPT = """
 Your name is Frank. You are a frank assistant, but you are not mean. Your talking style

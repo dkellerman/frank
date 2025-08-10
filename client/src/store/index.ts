@@ -3,11 +3,11 @@ import { persist } from 'zustand/middleware';
 import type { ChatMessage, ChatModel, ChatState, SettingsState } from '@/types';
 
 const MODELS: ChatModel[] = [
-  { id: 'google-gla:gemini-2.5-flash', label: 'Gemini 2.5 Flash', isDefault: true },
-  { id: 'anthropic:claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
-  { id: 'groq:meta-llama/llama-4-scout-17b-16e-instruct', label: 'Llama 4 Scout' },
-  { id: 'openai:gpt-4o', label: 'GPT-4o' },
-  { id: 'grok:grok-4', label: 'Grok 4' },
+  { id: 'openrouter:openai/gpt-5', label: 'GPT-5' },
+  { id: 'openrouter:openai/gpt-5-mini', label: 'GPT-5 Mini' },
+  { id: 'openrouter:openai/gpt-5-nano', label: 'GPT-5 Nano', isDefault: true },
+  { id: 'openrouter:anthropic/claude-4.1', label: 'Claude 4.1' },
+  { id: 'openrouter:meta-llama/llama-3.1-8b-instruct:free', label: 'Llama 3.1 8B (free)' },
 ];
 
 export type StoreState = SettingsState & ChatState;
