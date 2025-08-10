@@ -25,8 +25,7 @@ export default function Chat() {
   }, []);
 
   return (
-    <div className={cn('flex min-h-dvh flex-col overflow-hidden')}>
-      {' '}
+    <div className={cn('flex h-dvh flex-col overflow-hidden')}>
       <NavBar />
       <main
         className={cn(

@@ -19,20 +19,20 @@ export interface Chat {
 export interface ModelRequest {
   parts: (SystemPromptPart | UserPromptPart | ToolReturnPart | RetryPromptPart)[];
   instructions?: string | null;
-  kind?: 'request';
+  kind?: "request";
   [k: string]: unknown;
 }
 export interface SystemPromptPart {
   content: string;
   timestamp?: string;
   dynamic_ref?: string | null;
-  part_kind?: 'system-prompt';
+  part_kind?: "system-prompt";
   [k: string]: unknown;
 }
 export interface UserPromptPart {
   content: string | (string | ImageUrl | AudioUrl | DocumentUrl | VideoUrl | BinaryContent)[];
   timestamp?: string;
-  part_kind?: 'user-prompt';
+  part_kind?: "user-prompt";
   [k: string]: unknown;
 }
 export interface ImageUrl {
@@ -41,7 +41,7 @@ export interface ImageUrl {
   vendor_metadata?: {
     [k: string]: unknown;
   } | null;
-  kind?: 'image-url';
+  kind?: "image-url";
   [k: string]: unknown;
 }
 export interface AudioUrl {
@@ -50,7 +50,7 @@ export interface AudioUrl {
   vendor_metadata?: {
     [k: string]: unknown;
   } | null;
-  kind?: 'audio-url';
+  kind?: "audio-url";
   [k: string]: unknown;
 }
 export interface DocumentUrl {
@@ -59,7 +59,7 @@ export interface DocumentUrl {
   vendor_metadata?: {
     [k: string]: unknown;
   } | null;
-  kind?: 'document-url';
+  kind?: "document-url";
   [k: string]: unknown;
 }
 export interface VideoUrl {
@@ -68,30 +68,30 @@ export interface VideoUrl {
   vendor_metadata?: {
     [k: string]: unknown;
   } | null;
-  kind?: 'video-url';
+  kind?: "video-url";
   [k: string]: unknown;
 }
 export interface BinaryContent {
   data: string;
   media_type:
-    | ('audio/wav' | 'audio/mpeg' | 'audio/ogg' | 'audio/flac' | 'audio/aiff' | 'audio/aac')
-    | ('image/jpeg' | 'image/png' | 'image/gif' | 'image/webp')
+    | ("audio/wav" | "audio/mpeg" | "audio/ogg" | "audio/flac" | "audio/aiff" | "audio/aac")
+    | ("image/jpeg" | "image/png" | "image/gif" | "image/webp")
     | (
-        | 'application/pdf'
-        | 'text/plain'
-        | 'text/csv'
-        | 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        | 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        | 'text/html'
-        | 'text/markdown'
-        | 'application/vnd.ms-excel'
+        | "application/pdf"
+        | "text/plain"
+        | "text/csv"
+        | "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        | "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        | "text/html"
+        | "text/markdown"
+        | "application/vnd.ms-excel"
       )
     | string;
   identifier?: string | null;
   vendor_metadata?: {
     [k: string]: unknown;
   } | null;
-  kind?: 'binary';
+  kind?: "binary";
   [k: string]: unknown;
 }
 export interface ToolReturnPart {
@@ -102,7 +102,7 @@ export interface ToolReturnPart {
     [k: string]: unknown;
   };
   timestamp?: string;
-  part_kind?: 'tool-return';
+  part_kind?: "tool-return";
   [k: string]: unknown;
 }
 export interface RetryPromptPart {
@@ -110,7 +110,7 @@ export interface RetryPromptPart {
   tool_name?: string | null;
   tool_call_id?: string;
   timestamp?: string;
-  part_kind?: 'retry-prompt';
+  part_kind?: "retry-prompt";
   [k: string]: unknown;
 }
 export interface ErrorDetails {
@@ -125,11 +125,11 @@ export interface ErrorDetails {
   [k: string]: unknown;
 }
 export interface ModelResponse {
-  parts: (TextPart | ToolCallPart | ThinkingPart)[];
+  parts: (TextPart | ToolCallPart | BuiltinToolCallPart | BuiltinToolReturnPart | ThinkingPart)[];
   usage?: Usage;
   model_name?: string | null;
   timestamp?: string;
-  kind?: 'response';
+  kind?: "response";
   vendor_details?: {
     [k: string]: unknown;
   } | null;
@@ -138,7 +138,7 @@ export interface ModelResponse {
 }
 export interface TextPart {
   content: string;
-  part_kind?: 'text';
+  part_kind?: "text";
   [k: string]: unknown;
 }
 export interface ToolCallPart {
@@ -150,14 +150,39 @@ export interface ToolCallPart {
       }
     | null;
   tool_call_id?: string;
-  part_kind?: 'tool-call';
+  part_kind?: "tool-call";
+  [k: string]: unknown;
+}
+export interface BuiltinToolCallPart {
+  tool_name: string;
+  args?:
+    | string
+    | {
+        [k: string]: unknown;
+      }
+    | null;
+  tool_call_id?: string;
+  provider_name?: string | null;
+  part_kind?: "builtin-tool-call";
+  [k: string]: unknown;
+}
+export interface BuiltinToolReturnPart {
+  tool_name: string;
+  content: unknown;
+  tool_call_id: string;
+  metadata?: {
+    [k: string]: unknown;
+  };
+  timestamp?: string;
+  provider_name?: string | null;
+  part_kind?: "builtin-tool-return";
   [k: string]: unknown;
 }
 export interface ThinkingPart {
   content: string;
   id?: string | null;
   signature?: string | null;
-  part_kind?: 'thinking';
+  part_kind?: "thinking";
   [k: string]: unknown;
 }
 export interface Usage {
@@ -170,31 +195,41 @@ export interface Usage {
   } | null;
   [k: string]: unknown;
 }
+export interface ChatModel {
+  id: string;
+  label: string;
+  isDefault?: boolean;
+}
 export interface ErrorEvent {
-  type?: 'error';
+  type?: "error";
   code: string;
   detail: string;
 }
+export interface InitializeAckEvent {
+  type?: "initialize_ack";
+  chatId?: string | null;
+  models: ChatModel[];
+}
 export interface InitializeEvent {
-  type?: 'initialize';
+  type?: "initialize";
   chatId?: string | null;
 }
 export interface NewChatAckEvent {
-  type?: 'new_chat_ack';
+  type?: "new_chat_ack";
   chatId: string;
 }
 export interface NewChatEvent {
-  type?: 'new_chat';
+  type?: "new_chat";
   message: string;
   model: string;
 }
 export interface ReplyEvent {
-  type?: 'reply';
+  type?: "reply";
   text?: string;
   done?: boolean;
 }
 export interface SendEvent {
-  type?: 'send';
+  type?: "send";
   chatId: string;
   message: string;
   model: string | null;

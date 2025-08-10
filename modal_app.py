@@ -5,6 +5,7 @@ from main import app as web_app
 
 image = (
     modal.Image.debian_slim()
+    .env({"APP_ENV": "production"})
     .pip_install_from_pyproject("pyproject.toml")
     .pip_install("websockets")
     .add_local_file(".env", "/root/.env", copy=True)

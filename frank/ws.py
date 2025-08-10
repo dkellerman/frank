@@ -5,11 +5,12 @@ import logfire
 from fastapi import WebSocket, WebSocketDisconnect
 from pydantic_ai.result import StreamedRunResult
 from frank.core.redis import get_redis
-from frank.agents import stream_agent_response
+from frank.agents import stream_agent_response, MODELS
 from frank.schemas import (
     AgentQuery,
     ChatEvent,
     InitializeEvent,
+    InitializeAckEvent,
     EventType,
     SendEvent,
     ReplyEvent,
@@ -78,8 +79,9 @@ class ChatWebSocketHandler:
         if event.chat_id:
             chat = self.chat = await self.load_chat(event.chat_id)
 
-        # send event back to client as ack
-        await self.send_to_user(event)
+        # send ack event back to client with models
+        ack_event = InitializeAckEvent(chatId=event.chat_id, models=MODELS)
+        await self.send_to_user(ack_event)
 
         # if chat is pending and has a query, stream response
         if chat and chat.pending and chat.cur_query:
@@ -106,7 +108,7 @@ class ChatWebSocketHandler:
 
         async for chunk in stream_agent_response(
             event.message,
-            model=event.model,
+            model=event.model if event.model else None,
             history=self.chat.history,
             on_done=_on_done,
         ):

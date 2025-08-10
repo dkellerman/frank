@@ -8,6 +8,7 @@ import type {
   SendEvent,
   NewChatAckEvent,
   NewChatEvent,
+  InitializeAckEvent,
   Chat,
   ChatMessage,
 } from '@/types';
@@ -15,7 +16,10 @@ import { EventType } from '@/types';
 import { useStore } from '@/store';
 import { useNavigate, useParams } from 'react-router';
 
-const wsUrl = import.meta.env.DEV ? '/ws/chat' : 'wss://dkellerman--frank-serve.modal.run/ws/chat';
+const wsUrl =
+  import.meta.env.VITE_APP_DEPLOY === 'modal'
+    ? 'wss://dkellerman--frank-serve.modal.run/ws/chat'
+    : '/ws/chat';
 
 export default function useChat() {
   const { model, history, addMessage, clearHistory, setHistory } = useStore();
@@ -72,18 +76,15 @@ export default function useChat() {
   }, [lastMessage]);
 
   async function handleEvent(event: ChatEvent) {
-    if (
-      event.type === EventType.REPLY ||
-      event.type === EventType.ERROR ||
-      event.type === EventType.NEW_CHAT_ACK
-    ) {
-      console.log('[useChat] event', event.type);
-    }
+    console.log('received event', event.type);
+
     if (event.type === EventType.ERROR) {
       throw new Error((event as ErrorEvent).detail);
     } else if (event.type === EventType.REPLY) {
       handleReply(event as ReplyEvent);
-    } else if (event.type === EventType.INITIALIZE) {
+    } else if (event.type === EventType.INITIALIZE_ACK) {
+      const { models } = event as InitializeAckEvent;
+      useStore.getState().setModels(models);
       useStore.setState({ loading: false });
     } else if (event.type === EventType.NEW_CHAT_ACK) {
       const { chatId } = event as NewChatAckEvent;

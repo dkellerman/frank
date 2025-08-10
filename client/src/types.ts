@@ -3,6 +3,7 @@ import type * as types from '@/lib/pydantic-types';
 export type ChatEvent =
   | types.ErrorEvent
   | types.InitializeEvent
+  | types.InitializeAckEvent
   | types.NewChatEvent
   | types.NewChatAckEvent
   | types.ReplyEvent
@@ -10,6 +11,7 @@ export type ChatEvent =
 
 export const EventType = {
   INITIALIZE: 'initialize',
+  INITIALIZE_ACK: 'initialize_ack',
   NEW_CHAT: 'new_chat',
   NEW_CHAT_ACK: 'new_chat_ack',
   REPLY: 'reply',
@@ -48,6 +50,7 @@ export interface SettingsState {
   models: ChatModel[];
   model: ChatModel;
   setModel: (id: string) => void;
+  setModels: (models: ChatModel[]) => void;
 }
 
 export * from '@/lib/pydantic-types';

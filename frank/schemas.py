@@ -4,6 +4,12 @@ from typing import Annotated, Literal
 import enum
 
 
+class ChatModel(BaseModel):
+    id: str
+    label: str
+    is_default: bool = Field(default=False, alias="isDefault")
+
+
 class AgentQuery(BaseModel):
     prompt: str
     model: str
@@ -23,6 +29,7 @@ class Chat(BaseModel):
 
 class EventType(str, enum.Enum):
     INITIALIZE = "initialize"
+    INITIALIZE_ACK = "initialize_ack"
     SEND = "send"
     NEW_CHAT = "new_chat"
     NEW_CHAT_ACK = "new_chat_ack"
@@ -33,6 +40,12 @@ class EventType(str, enum.Enum):
 class InitializeEvent(BaseModel):
     type: Literal[EventType.INITIALIZE] = EventType.INITIALIZE
     chat_id: str | None = Field(default=None, alias="chatId")
+
+
+class InitializeAckEvent(BaseModel):
+    type: Literal[EventType.INITIALIZE_ACK] = EventType.INITIALIZE_ACK
+    chat_id: str | None = Field(default=None, alias="chatId")
+    models: list[ChatModel]
 
 
 class SendEvent(BaseModel):
@@ -67,6 +80,7 @@ class ErrorEvent(BaseModel):
 
 ChatEvent = Annotated[
     InitializeEvent
+    | InitializeAckEvent
     | NewChatEvent
     | NewChatAckEvent
     | SendEvent

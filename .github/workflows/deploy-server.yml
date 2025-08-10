@@ -1,0 +1,56 @@
+name: Deploy Server
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "frank/**"
+      - "main.py"
+      - "pyproject.toml"
+
+permissions:
+  contents: read
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    env:
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      EC2_USER: ${{ secrets.EC2_USER }}
+      EC2_APP_DIR: ${{ secrets.EC2_APP_DIR }}
+      SERVICE_NAME: ${{ secrets.SERVICE_NAME }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Rsync server code to EC2
+        run: |
+          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" \
+            main.py frank pyproject.toml \
+            ${EC2_USER}@${EC2_HOST}:${EC2_APP_DIR}/
+
+      - name: Install/Update deps with uv and restart service
+        run: |
+          ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} "\
+            set -euo pipefail; \
+            cd ${EC2_APP_DIR}; \
+            curl -LsSf https://astral.sh/uv/install.sh | sh -s -- -y >/dev/null 2>&1 || true; \
+            export PATH=\$HOME/.local/bin:\$PATH; \
+            uv sync --locked || uv sync; \
+            pgrep -f 'uvicorn main:app' >/dev/null && sudo pkill -f 'uvicorn main:app' || true; \
+            APP_ENV=production \
+            LOGFIRE_TOKEN='${{ secrets.LOGFIRE_TOKEN }}' \
+            UPSTASH_REDIS_REST_URL='${{ secrets.UPSTASH_REDIS_REST_URL }}' \
+            UPSTASH_REDIS_REST_TOKEN='${{ secrets.UPSTASH_REDIS_REST_TOKEN }}' \
+            OPENROUTER_API_KEY='${{ secrets.OPENROUTER_API_KEY }}' \
+            nohup uv run uvicorn main:app --host 0.0.0.0 --port 8000 >/dev/null 2>&1 & \
+          "
+
+      - name: Health check
+        run: |
+          ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} "curl -fsS http://127.0.0.1:8000/api/healthz | grep -q '\"ok\"'"
