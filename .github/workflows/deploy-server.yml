@@ -34,10 +34,6 @@ jobs:
             main.py frank pyproject.toml \
             ${EC2_USER}@${EC2_HOST}:${EC2_APP_DIR}/
 
-      - name: Verify APP_ENV=production
-        run: |
-          ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} "set -euo pipefail; test -f ${EC2_APP_DIR}/.env && grep -E '^APP_ENV=production(\\b|$)' ${EC2_APP_DIR}/.env >/dev/null || (echo 'APP_ENV must be production in ${EC2_APP_DIR}/.env on prod' >&2; exit 1)"
-
       - name: Install/Update deps with uv and restart service
         run: |
           ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} "\
@@ -47,9 +43,9 @@ jobs:
             export PATH=\$HOME/.local/bin:\$PATH; \
             uv sync --locked || uv sync; \
             pgrep -f 'uvicorn main:app' >/dev/null && sudo pkill -f 'uvicorn main:app' || true; \
-            nohup uv run uvicorn main:app --host 0.0.0.0 --port 8000 >/dev/null 2>&1 & \
+            APP_ENV=production nohup uv run uvicorn main:app --host 0.0.0.0 --port 8000 >/dev/null 2>&1 & \
           "
 
       - name: Health check
         run: |
-          ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} "curl -fsS http://127.0.0.1:8000/api/healthz | grep -q '"ok"'"
+          ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} "curl -fsS http://127.0.0.1:8000/api/healthz | grep -q '\"ok\"'"
