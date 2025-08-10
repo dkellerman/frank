@@ -34,6 +34,10 @@ jobs:
             main.py frank pyproject.toml \
             ${EC2_USER}@${EC2_HOST}:${EC2_APP_DIR}/
 
+      - name: Verify APP_ENV=production
+        run: |
+          ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} "set -euo pipefail; test -f ${EC2_APP_DIR}/.env && grep -E '^APP_ENV=production(\\b|$)' ${EC2_APP_DIR}/.env >/dev/null || (echo 'APP_ENV must be production in ${EC2_APP_DIR}/.env on prod' >&2; exit 1)"
+
       - name: Install/Update deps with uv and restart service
         run: |
           ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} "\
