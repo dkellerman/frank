@@ -2,7 +2,7 @@ build:
 	cd client && VITE_APP_DEPLOY=modal npm run build
 
 deploy: build
-	uv run modal deploy modal_app.py
+	fly deploy
 
 dev:
 	uv run main.py
