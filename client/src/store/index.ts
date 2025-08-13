@@ -32,11 +32,12 @@ export const createSettingsSlice: StateCreator<SettingsState, [], [], SettingsSt
     set({ models, model: validModel });
   },
   themeMode: 'system' as ThemeMode,
-  get themeLabel() {
-    const mode = get().themeMode;
-    return mode === 'light' ? 'Light' : mode === 'dark' ? 'Dark' : 'System';
-  },
-  setThemeMode: (mode: ThemeMode) => set({ themeMode: mode }),
+  themeLabel: 'System',
+  setThemeMode: (mode: ThemeMode) =>
+    set({
+      themeMode: mode,
+      themeLabel: mode === 'light' ? 'Light' : mode === 'dark' ? 'Dark' : 'System',
+    }),
 });
 
 export const useStore = create<StoreState>()(
