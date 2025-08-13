@@ -46,11 +46,16 @@ export interface ChatState {
   loadHistory: (chatId: string) => Promise<void>;
 }
 
+export type ThemeMode = 'light' | 'dark' | 'system';
+
 export interface SettingsState {
   models: ChatModel[];
   model: ChatModel;
   setModel: (id: string) => void;
   setModels: (models: ChatModel[]) => void;
+  themeMode: ThemeMode;
+  themeLabel: string;
+  setThemeMode: (mode: ThemeMode) => void;
 }
 
 export * from '@/lib/pydantic-types';

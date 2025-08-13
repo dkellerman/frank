@@ -1,8 +1,21 @@
 import { create, type StateCreator } from 'zustand';
-import { persist } from 'zustand/middleware';
-import type { ChatMessage, ChatModel, ChatState, SettingsState } from '@/types';
+import { persist, subscribeWithSelector } from 'zustand/middleware';
+import type { ChatMessage, ChatModel, ChatState, SettingsState, ThemeMode } from '@/types';
 
 export type StoreState = SettingsState & ChatState;
+
+export const createChatSlice: StateCreator<ChatState, [], [], ChatState> = (set, get) => ({
+  history: [],
+  setHistory: (history: ChatMessage[]) => set({ history }),
+  clearHistory: () => set({ history: [] }),
+  addMessage: (message: ChatMessage) => set({ history: [...get().history, message] }),
+  loading: false,
+  sending: false,
+  connected: false,
+  startNewChat: () => {},
+  sendMessage: () => {},
+  loadHistory: async () => {},
+});
 
 export const createSettingsSlice: StateCreator<SettingsState, [], [], SettingsState> = (
   set,
@@ -18,32 +31,39 @@ export const createSettingsSlice: StateCreator<SettingsState, [], [], SettingsSt
       (currentModel && models.find((m) => m.id === currentModel.id)) || defaultModel;
     set({ models, model: validModel });
   },
-});
-
-export const createChatSlice: StateCreator<ChatState, [], [], ChatState> = (set, get) => ({
-  history: [],
-  setHistory: (history: ChatMessage[]) => set({ history }),
-  clearHistory: () => set({ history: [] }),
-  addMessage: (message: ChatMessage) => set({ history: [...get().history, message] }),
-  loading: false,
-  sending: false,
-  connected: false,
-  startNewChat: () => {},
-  sendMessage: () => {},
-  loadHistory: async () => {},
+  themeMode: 'system' as ThemeMode,
+  get themeLabel() {
+    const mode = get().themeMode;
+    return mode === 'light' ? 'Light' : mode === 'dark' ? 'Dark' : 'System';
+  },
+  setThemeMode: (mode: ThemeMode) => set({ themeMode: mode }),
 });
 
 export const useStore = create<StoreState>()(
-  persist(
-    (...args) => ({
-      ...createChatSlice(...args),
-      ...createSettingsSlice(...args),
-    }),
-    {
-      name: 'frank-store',
-      partialize: (state) => ({
-        model: state.model,
+  subscribeWithSelector(
+    persist(
+      (...args) => ({
+        ...createChatSlice(...args),
+        ...createSettingsSlice(...args),
       }),
-    }
+      {
+        name: 'frank-store',
+        partialize: (state) => ({
+          model: state.model,
+          themeMode: state.themeMode,
+        }),
+      }
+    )
   )
+);
+
+// Apply theme when themeMode changes
+useStore.subscribe(
+  (state) => state.themeMode,
+  (themeMode) => {
+    const isDark =
+      themeMode === 'dark' ||
+      (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.classList.toggle('dark', isDark);
+  }
 );
