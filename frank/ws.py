@@ -4,8 +4,8 @@ import pydantic
 import logfire
 from fastapi import WebSocket, WebSocketDisconnect
 from pydantic_ai.result import StreamedRunResult
-from frank.core.redis import get_redis
 from frank.agents import stream_agent_response, MODELS
+from frank.services.chat import ChatService
 from frank.schemas import (
     AgentQuery,
     ChatEvent,
@@ -22,7 +22,6 @@ from frank.schemas import (
 
 
 class ChatWebSocketHandler:
-    HISTORY_LENGTH = 80
     IGNORE_ERRORS = {
         "Cannot call 'receive' once a disconnect message has been received",
     }
@@ -78,7 +77,7 @@ class ChatWebSocketHandler:
     async def handle_initialize(self, event: InitializeEvent):
         chat: Chat | None = None
         if event.chat_id:
-            chat = self.chat = await self.load_chat(event.chat_id)
+            chat = self.chat = await ChatService.load(event.chat_id)
 
         # send ack event back to client with models
         ack_event = InitializeAckEvent(chatId=event.chat_id, models=MODELS)
@@ -93,7 +92,7 @@ class ChatWebSocketHandler:
         chat_id = str(uuid.uuid4())
         chat = Chat(id=chat_id, pending=True)
         chat.cur_query = AgentQuery(prompt=event.message, model=event.model)
-        await self.save_chat(chat)
+        await ChatService.save(chat)
 
         await self.send_to_user(NewChatAckEvent(chatId=chat_id))
 
@@ -128,10 +127,10 @@ class ChatWebSocketHandler:
 
         # update chat state
         chat.history.extend(result.new_messages())
-        chat.history = chat.history[-self.HISTORY_LENGTH :]
+        chat.history = chat.history[-ChatService.HISTORY_LENGTH :]
         chat.cur_query = query
         chat.pending = False
-        await self.save_chat(chat)
+        await ChatService.save(chat)
 
     async def send_to_user(self, response: ChatEvent):
         await self.ws.send_json(response.model_dump(by_alias=True))
@@ -150,25 +149,3 @@ class ChatWebSocketHandler:
             on_done=_on_done,
         ):
             await self.send_to_user(ReplyEvent(text=chunk, done=False))
-
-    @classmethod
-    async def load_chat(cls, chat_id: str) -> Chat | None:
-        redis = get_redis()
-        chat_data = await redis.get(_skey(chat_id))
-        return Chat.model_validate_json(chat_data) if chat_data else None
-
-    @classmethod
-    async def save_chat(cls, chat: Chat):
-        redis = get_redis()
-        try:
-            await redis.setex(
-                _skey(chat.id),
-                60 * 60 * 24,
-                chat.model_dump_json(by_alias=True),
-            )
-        except Exception as e:
-            logfire.error(f"Error saving session: {e}")
-
-
-def _skey(sid: str) -> str:
-    return f"chat:{sid}"

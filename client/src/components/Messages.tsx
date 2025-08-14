@@ -17,11 +17,19 @@ export default function Messages() {
 
   const items = virtualizer.getVirtualItems();
 
+  // Track the last message content to detect streaming updates
+  const lastMessageContent = history[history.length - 1]?.content || '';
+
   useEffect(() => {
     if (history.length > 0) {
-      virtualizer.scrollToIndex(history.length - 1, { behavior: 'smooth' });
+      setTimeout(() => {
+        virtualizer.scrollToIndex(history.length - 1, {
+          align: 'end',
+          behavior: 'auto',
+        });
+      }, 0);
     }
-  }, [history.length, virtualizer]);
+  }, [history.length, lastMessageContent, virtualizer]);
 
   return (
     <div ref={containerRef} className={cn('flex-1 overflow-y-auto')}>
