@@ -16,10 +16,7 @@ import { EventType } from '@/types';
 import { useStore } from '@/store';
 import { useNavigate, useParams } from 'react-router';
 
-const wsUrl =
-  import.meta.env.VITE_APP_DEPLOY === 'modal'
-    ? 'wss://dkellerman--frank-serve.modal.run/ws/chat'
-    : '/ws/chat';
+const wsUrl = '/ws/chat';
 
 export default function useChat() {
   const { model, history, addMessage, clearHistory, setHistory } = useStore();
@@ -49,14 +46,14 @@ export default function useChat() {
       useStore.setState({ sending: true });
 
       if (chatId) {
-        const event: SendEvent = { type: EventType.SEND, chatId, message, model: model.id };
+        const event: SendEvent = { type: EventType.SEND, chatId, message, model: model?.id };
         sendJsonMessage(event);
       } else {
-        const newChat: NewChatEvent = { type: EventType.NEW_CHAT, message, model: model.id };
+        const newChat: NewChatEvent = { type: EventType.NEW_CHAT, message, model: model?.id };
         sendJsonMessage(newChat);
       }
     },
-    [addMessage, chatId, model.id, sendJsonMessage]
+    [addMessage, chatId, model?.id, sendJsonMessage]
   );
 
   const startNewChat = useCallback(() => {

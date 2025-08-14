@@ -64,7 +64,7 @@ export default function SettingsDrawer() {
 
           <div className={cn('flex items-center gap-2')}>
             <span className={cn('text-sm text-muted-foreground w-20 shrink-0')}>Base:</span>
-            <Select value={model.id} onValueChange={(value) => setModel(value)}>
+            <Select value={model?.id} onValueChange={(value) => setModel(value)}>
               <SelectTrigger className={cn('h-9 w-48 text-sm')}>
                 <SelectValue />
               </SelectTrigger>

@@ -1,5 +1,5 @@
 build:
-	cd client && VITE_APP_DEPLOY=modal npm run build
+	cd client && npm run build
 
 deploy: build
 	fly deploy
