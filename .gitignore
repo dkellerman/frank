@@ -8,6 +8,5 @@ wheels/
 .env*
 local/
 .DS_Store
-.vscode
 .ruff_cache
 
