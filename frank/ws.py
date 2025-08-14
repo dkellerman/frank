@@ -22,6 +22,7 @@ from frank.schemas import (
 
 
 class ChatWebSocketHandler:
+    HISTORY_LENGTH = 80
     IGNORE_ERRORS = {
         "Cannot call 'receive' once a disconnect message has been received",
     }
@@ -127,7 +128,7 @@ class ChatWebSocketHandler:
 
         # update chat state
         chat.history.extend(result.new_messages())
-        chat.history = chat.history[-20:]
+        chat.history = chat.history[-self.HISTORY_LENGTH :]
         chat.cur_query = query
         chat.pending = False
         await self.save_chat(chat)
