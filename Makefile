@@ -2,7 +2,7 @@ build:
 	cd client && npm run build
 
 deploy: build
-	fly deploy
+	fly deploy --config deploy/fly.toml
 
 dev:
 	uv run main.py

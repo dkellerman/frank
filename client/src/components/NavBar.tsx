@@ -16,7 +16,7 @@ export default function NavBar() {
       {/* Left: brand icon */}
       <a href="/" className={cn('flex items-center gap-2')}>
         <img
-          src="/favicon.png"
+          src="/favicon.png?v=3"
           alt="Frank"
           className={cn('h-9 w-9 rounded-md object-contain dark:opacity-90')}
         />
