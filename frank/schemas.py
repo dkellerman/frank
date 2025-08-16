@@ -5,6 +5,8 @@ import enum
 
 
 class ChatModel(BaseModel):
+    """LLM model configuration"""
+
     id: str
     label: str
     is_default: bool = Field(default=False, alias="isDefault")
@@ -18,6 +20,7 @@ class AgentQuery(BaseModel):
 
 class Chat(BaseModel):
     id: str
+    user_id: str = Field(alias="userId")
     history: list[ModelMessage] = Field(default_factory=list, alias="history")
     cur_query: AgentQuery | None = Field(default=None, alias="curQuery")
     pending: bool = False

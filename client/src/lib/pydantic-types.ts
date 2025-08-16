@@ -12,6 +12,7 @@ export interface AgentQuery {
 }
 export interface Chat {
   id: string;
+  userId: string;
   history?: (ModelRequest | ModelResponse)[];
   curQuery?: AgentQuery | null;
   pending?: boolean;
@@ -195,6 +196,9 @@ export interface Usage {
   } | null;
   [k: string]: unknown;
 }
+/**
+ * LLM model configuration
+ */
 export interface ChatModel {
   id: string;
   label: string;

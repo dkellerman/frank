@@ -16,5 +16,5 @@ clai:
 lint:
 	uv run ruff check --fix
 
-pydantic-to-typescript:
+pydantic2ts:
 	PYTHONPATH=. uv run pydantic2ts --module frank.schemas --output client/src/lib/pydantic-types.ts

@@ -45,12 +45,10 @@ def _make_key(chat_id: str) -> str:
 
 
 async def get_chat_optional(chat_id: str) -> Chat | None:
-    """Dependency that loads a chat or returns None"""
     return await ChatService.load(chat_id)
 
 
 async def get_chat_required(chat_id: str) -> Chat:
-    """Dependency that loads a chat or raises 404"""
     chat = await ChatService.load(chat_id)
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found")

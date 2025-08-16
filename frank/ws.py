@@ -6,6 +6,7 @@ from fastapi import WebSocket, WebSocketDisconnect
 from pydantic_ai.result import StreamedRunResult
 from frank.agents import stream_agent_response, MODELS
 from frank.services.chat import ChatService
+from frank.services.auth import UserRequired
 from frank.schemas import (
     AgentQuery,
     ChatEvent,
@@ -26,13 +27,14 @@ class ChatWebSocketHandler:
         "Cannot call 'receive' once a disconnect message has been received",
     }
 
-    def __init__(self, ws: WebSocket):
+    def __init__(self, ws: WebSocket, user: UserRequired):
         self.ws = ws
+        self.user = user
         self.chat: Chat | None = None
 
     async def run(self):
         await self.ws.accept()
-        logfire.info("WebSocket connected")
+        logfire.info(f"WebSocket connected for user {self.user.id}")
 
         try:
             while True:
@@ -77,7 +79,11 @@ class ChatWebSocketHandler:
     async def handle_initialize(self, event: InitializeEvent):
         chat: Chat | None = None
         if event.chat_id:
-            chat = self.chat = await ChatService.load(event.chat_id)
+            chat = await ChatService.load(event.chat_id)
+            if chat and chat.user_id != self.user.id:
+                await self.send_error("Access denied", "access_denied")
+                return
+            self.chat = chat
 
         # send ack event back to client with models
         ack_event = InitializeAckEvent(chatId=event.chat_id, models=MODELS)
@@ -90,7 +96,7 @@ class ChatWebSocketHandler:
     async def handle_new_chat(self, event: NewChatEvent):
         # create/save new chat and send back ack
         chat_id = str(uuid.uuid4())
-        chat = Chat(id=chat_id, pending=True)
+        chat = Chat(id=chat_id, userId=self.user.id, pending=True)
         chat.cur_query = AgentQuery(prompt=event.message, model=event.model)
         await ChatService.save(chat)
 

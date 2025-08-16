@@ -14,24 +14,21 @@ import type {
 } from '@/types';
 import { EventType } from '@/types';
 import { useStore } from '@/store';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate } from 'react-router';
 
-const wsUrl = '/ws/chat';
-
-export default function useChat() {
+export default function useChat(chatId?: string) {
   const { model, history, addMessage, clearHistory, setHistory, authToken } = useStore();
   const navigate = useNavigate();
-  const params = useParams<{ id?: string }>();
-  const chatId = params.id;
   const shouldConnect = useMemo(() => !!authToken, [authToken]);
 
   const { sendJsonMessage, lastMessage, readyState } = useWebSocket(
-    wsUrl,
+    `/ws/chat?token=${authToken}`,
     {
-      onOpen: () => {
+      onOpen: async () => {
         useStore.setState({ loading: true });
+        if (chatId) await loadHistory(chatId);
         sendJsonMessage({ type: EventType.INITIALIZE, chatId });
-        console.log('[useChat] ws open');
+        console.log('ws open');
       },
       shouldReconnect: () => shouldConnect,
     },
@@ -89,8 +86,8 @@ export default function useChat() {
       useStore.getState().setModels(models);
       useStore.setState({ loading: false });
     } else if (event.type === EventType.NEW_CHAT_ACK) {
-      const { chatId } = event as NewChatAckEvent;
-      navigate(`/chats/${chatId}`);
+      const { chatId: newChatId } = event as NewChatAckEvent;
+      navigate(`/chats/${newChatId}`);
     }
   }
 
@@ -117,7 +114,12 @@ export default function useChat() {
 
   const loadHistory = useCallback(
     async (chatId: string) => {
-      const resp = await fetch(`/api/chats/${chatId}`);
+      console.log('loadHistory', chatId);
+      const resp = await fetch(`/api/chats/${chatId}`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
       const data: Chat = await resp.json();
       const messages: ChatMessage[] = (data.history ?? []).map((m) => {
         const parts = (m.parts ?? []).filter((p) =>
@@ -139,7 +141,7 @@ export default function useChat() {
       }
       setHistory(messages);
     },
-    [setHistory]
+    [setHistory, authToken]
   );
 
   useEffect(() => {

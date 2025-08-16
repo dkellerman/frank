@@ -6,18 +6,11 @@ import ChatInput from '@/components/ChatInput';
 import useChat from '@/hooks/useChat';
 import { useParams } from 'react-router';
 import { useEffect, useState } from 'react';
-import { useStore } from '@/store';
 
 export default function Chat() {
-  useChat();
-
-  const { id } = useParams<{ id: string }>();
-  const { loadHistory } = useStore();
   const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    if (id) loadHistory(id);
-  }, [id, loadHistory]);
+  const { id } = useParams<{ id: string }>();
+  useChat(id);
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setMounted(true));
