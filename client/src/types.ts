@@ -21,38 +21,24 @@ export const EventType = {
 
 export type EventTypeValue = (typeof EventType)[keyof typeof EventType];
 
-export interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: number;
-}
-
-export interface ChatModel {
-  id: string;
-  label: string;
-  isDefault?: boolean;
-}
-
+export type ThemeMode = 'light' | 'dark' | 'system';
 export interface ChatState {
-  history: ChatMessage[];
-  setHistory: (history: ChatMessage[]) => void;
+  history: types.ChatEntry[];
+  setHistory: (history: types.ChatEntry[]) => void;
   clearHistory: () => void;
-  addMessage: (message: ChatMessage) => void;
+  addMessage: (message: types.ChatEntry) => void;
   loading: boolean;
   sending: boolean;
   connected: boolean;
   startNewChat: () => void;
   sendMessage: (message: string) => void;
-  loadHistory: (chatId: string) => Promise<void>;
+  loadChat: (chatId: string) => Promise<void>;
 }
-
-export type ThemeMode = 'light' | 'dark' | 'system';
-
 export interface SettingsState {
-  models: ChatModel[];
-  model: ChatModel;
+  models: types.ChatModel[];
+  model: types.ChatModel;
   setModel: (id: string) => void;
-  setModels: (models: ChatModel[]) => void;
+  setModels: (models: types.ChatModel[]) => void;
   themeMode: ThemeMode;
   themeLabel: string;
   setThemeMode: (mode: ThemeMode) => void;

@@ -4,7 +4,7 @@
     {
       "label": "Frank Client",
       "type": "shell",
-      "command": "npx env-cmd -f ../.env npm run dev",
+      "command": "npm run dev",
       "options": {
         "cwd": "${workspaceFolder}/client"
       },

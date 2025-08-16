@@ -1,8 +1,8 @@
 from typing import Awaitable, Callable, AsyncGenerator
 from cachetools.func import LRUCache, TTLCache, cached
 from pydantic_ai import Agent
-from pydantic_ai.result import StreamedRunResult
 from pydantic_ai.messages import ModelMessage
+from pydantic_ai.result import StreamedRunResult
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openrouter import OpenRouterProvider
 from promptlayer import PromptLayer

@@ -50,8 +50,7 @@ export default function Messages() {
                 className="px-3 pb-5 flex flex-col"
               >
                 <Message
-                  role={message.role}
-                  content={message.content}
+                  entry={message}
                   showCursor={sending && virtualItem.index === history.length - 1}
                 />
               </div>

@@ -5,7 +5,7 @@ import logfire
 from fastapi import WebSocket, WebSocketDisconnect
 from pydantic_ai.result import StreamedRunResult
 from frank.agents import stream_agent_response, MODELS
-from frank.services.chat import ChatService
+from frank.services.chat import load_chat, save_chat, HISTORY_LENGTH
 from frank.services.auth import UserRequired
 from frank.schemas import (
     AgentQuery,
@@ -59,12 +59,13 @@ class ChatWebSocketHandler:
                     continue
 
                 # dispatch to event handler
-                if event.type == EventType.INITIALIZE:
-                    await self.handle_initialize(event)
-                elif event.type == EventType.NEW_CHAT:
-                    await self.handle_new_chat(event)
-                elif event.type == EventType.SEND:
-                    await self.handle_send(event)
+                match event.type:
+                    case EventType.INITIALIZE:
+                        await self.handle_initialize(event)
+                    case EventType.NEW_CHAT:
+                        await self.handle_new_chat(event)
+                    case EventType.SEND:
+                        await self.handle_send(event)
 
         except WebSocketDisconnect:
             logfire.info("WebSocket disconnected")
@@ -78,8 +79,9 @@ class ChatWebSocketHandler:
 
     async def handle_initialize(self, event: InitializeEvent):
         chat: Chat | None = None
+
         if event.chat_id:
-            chat = await ChatService.load(event.chat_id)
+            chat = await load_chat(event.chat_id)
             if chat and chat.user_id != self.user.id:
                 await self.send_error("Access denied", "access_denied")
                 return
@@ -98,7 +100,7 @@ class ChatWebSocketHandler:
         chat_id = str(uuid.uuid4())
         chat = Chat(id=chat_id, userId=self.user.id, pending=True)
         chat.cur_query = AgentQuery(prompt=event.message, model=event.model)
-        await ChatService.save(chat)
+        await save_chat(chat)
 
         await self.send_to_user(NewChatAckEvent(chatId=chat_id))
 
@@ -120,30 +122,6 @@ class ChatWebSocketHandler:
         ):
             await self.send_to_user(ReplyEvent(text=chunk, done=False))
 
-    async def handle_agent_done(
-        self,
-        query: AgentQuery,
-        result: StreamedRunResult,
-        chat: Chat,
-    ):
-        logfire.info(f"\n\n*** Agent query: {query.model_dump_json()}")
-
-        # send done event to client
-        await self.send_to_user(ReplyEvent(done=True))
-
-        # update chat state
-        chat.history.extend(result.new_messages())
-        chat.history = chat.history[-ChatService.HISTORY_LENGTH :]
-        chat.cur_query = query
-        chat.pending = False
-        await ChatService.save(chat)
-
-    async def send_to_user(self, response: ChatEvent):
-        await self.ws.send_json(response.model_dump(by_alias=True))
-
-    async def send_error(self, detail: str, code: str):
-        await self.send_to_user(ErrorEvent(detail=detail, code=code))
-
     async def stream_response(self, query: AgentQuery, chat: Chat):
         async def _on_done(q: AgentQuery, result: StreamedRunResult):
             await self.handle_agent_done(q, result, chat)
@@ -155,3 +133,27 @@ class ChatWebSocketHandler:
             on_done=_on_done,
         ):
             await self.send_to_user(ReplyEvent(text=chunk, done=False))
+
+    async def handle_agent_done(
+        self,
+        query: AgentQuery,
+        result: StreamedRunResult,
+        chat: Chat,
+    ):
+        logfire.info(f"\n\n*** Agent query: {query.model_dump_json()}")
+
+        # send done event to client
+        await self.send_to_user(ReplyEvent(done=True))
+
+        # update chat history
+        chat.history.extend(result.new_messages())
+        chat.history = chat.history[-HISTORY_LENGTH:]
+        chat.cur_query = query
+        chat.pending = False
+        await save_chat(chat)
+
+    async def send_to_user(self, response: ChatEvent):
+        await self.ws.send_json(response.model_dump(by_alias=True, mode="json"))
+
+    async def send_error(self, detail: str, code: str):
+        await self.send_to_user(ErrorEvent(detail=detail, code=code))
