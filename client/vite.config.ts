@@ -6,7 +6,7 @@ import { fileURLToPath, URL } from 'node:url';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
-    sourcemap: true
+    sourcemap: false,
   },
   resolve: {
     alias: {
