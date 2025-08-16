@@ -1,6 +1,6 @@
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { flushSync } from 'react-dom';
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import type {
   ChatEvent,
   ErrorEvent,
@@ -19,19 +19,24 @@ import { useNavigate, useParams } from 'react-router';
 const wsUrl = '/ws/chat';
 
 export default function useChat() {
-  const { model, history, addMessage, clearHistory, setHistory } = useStore();
+  const { model, history, addMessage, clearHistory, setHistory, authToken } = useStore();
   const navigate = useNavigate();
   const params = useParams<{ id?: string }>();
   const chatId = params.id;
+  const shouldConnect = useMemo(() => !!authToken, [authToken]);
 
-  const { sendJsonMessage, lastMessage, readyState } = useWebSocket(wsUrl, {
-    onOpen: () => {
-      useStore.setState({ loading: true });
-      sendJsonMessage({ type: EventType.INITIALIZE, chatId });
-      console.log('[useChat] ws open');
+  const { sendJsonMessage, lastMessage, readyState } = useWebSocket(
+    wsUrl,
+    {
+      onOpen: () => {
+        useStore.setState({ loading: true });
+        sendJsonMessage({ type: EventType.INITIALIZE, chatId });
+        console.log('[useChat] ws open');
+      },
+      shouldReconnect: () => shouldConnect,
     },
-    shouldReconnect: () => true,
-  });
+    shouldConnect
+  );
 
   useEffect(() => {
     useStore.setState({ connected: readyState === ReadyState.OPEN });

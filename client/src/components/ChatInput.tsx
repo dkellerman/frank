@@ -34,7 +34,7 @@ export default function ChatInput({ placeholder = 'What can I do you for?' }: Pr
   }
 
   // Enable unless input is blank
-  const isDisabled = !text.trim();
+  const isDisabled = !connected || !text.trim();
 
   return (
     <form
@@ -61,7 +61,7 @@ export default function ChatInput({ placeholder = 'What can I do you for?' }: Pr
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
-              formRef.current?.requestSubmit();
+              if (!isDisabled) formRef.current?.requestSubmit();
             }
           }}
           placeholder={placeholder}

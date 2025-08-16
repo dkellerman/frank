@@ -58,4 +58,12 @@ export interface SettingsState {
   setThemeMode: (mode: ThemeMode) => void;
 }
 
+export interface AuthState {
+  user: any | null;
+  authToken: string | null;
+  authLoading: boolean;
+  signInAnonymously: () => Promise<void>;
+  initAuth: () => Promise<void>;
+}
+
 export * from '@/lib/pydantic-types';
