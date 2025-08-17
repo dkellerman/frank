@@ -5,6 +5,42 @@ from pydantic_ai.messages import ModelMessage
 from pydantic import BaseModel, Field, Discriminator
 
 
+class Chat(BaseModel):
+    """Chat session for server"""
+
+    id: str
+    user_id: str = Field(alias="userId")
+    title: str | None = None
+    model: str | None = None
+    cur_query: "AgentQuery | None" = Field(default=None, alias="curQuery")
+    pending: bool = False
+    ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), alias="updatedAt"
+    )
+    # server-side history has pydantic-ai ModelMessage list, which needs to be
+    # serialized to_jsonable_python for storage
+    history: list[ModelMessage] = Field(default_factory=list, exclude=True)
+
+
+class UserChat(Chat):
+    """Chat session for client, with history converted to ChatEntry list"""
+
+    history: list["ChatEntry"] = Field(default_factory=list)
+
+    class Config:
+        arbitrary_types_allowed = True
+        extra = "forbid"
+
+
+class ChatEntry(BaseModel):
+    """Minimal chat entry for client-side history"""
+
+    role: Literal["user", "assistant"]
+    content: str
+    ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
 class ChatModel(BaseModel):
     """LLM model configuration"""
 
@@ -14,36 +50,15 @@ class ChatModel(BaseModel):
 
 
 class AgentQuery(BaseModel):
+    """User query to the agent and result"""
+
     prompt: str
     model: str
     result: str | None = None
-    created: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
-class Chat(BaseModel):
-    id: str
-    user_id: str = Field(alias="userId")
-    history: list[ModelMessage] = Field(default_factory=list, exclude=True)
-    cur_query: AgentQuery | None = Field(default=None, alias="curQuery")
-    pending: bool = False
-    created: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-
-class ChatEntry(BaseModel):
-    """Minimal chat entry for client-side history"""
-
-    role: Literal["user", "assistant"]
-    content: str
-    created: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-
-class UserChat(Chat):
-    history: list[ChatEntry] = Field(default_factory=list)
-
-    class Config:
-        arbitrary_types_allowed = True
-        extra = "forbid"
+# --------- Events ---------
 
 
 class EventType(str, enum.Enum):
@@ -57,51 +72,64 @@ class EventType(str, enum.Enum):
 
 
 class InitializeEvent(BaseModel):
+    """Client sends this first to initialize a chat session"""
+
     type: Literal[EventType.INITIALIZE] = EventType.INITIALIZE
     chat_id: str | None = Field(default=None, alias="chatId")
-    created: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class InitializeAckEvent(BaseModel):
+    """Server sends this to acknowledge the client's initialization request"""
+
     type: Literal[EventType.INITIALIZE_ACK] = EventType.INITIALIZE_ACK
     chat_id: str | None = Field(default=None, alias="chatId")
     models: list[ChatModel]
-    created: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class NewChatEvent(BaseModel):
+    """Client sends this to start a new chat session"""
+
     type: Literal[EventType.NEW_CHAT] = EventType.NEW_CHAT
     message: str
     model: str
-    created: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class NewChatAckEvent(BaseModel):
+    """Server sends this to acknowledge the client's new chat request and
+    send the new chat ID"""
+
     type: Literal[EventType.NEW_CHAT_ACK] = EventType.NEW_CHAT_ACK
     chat_id: str = Field(alias="chatId")
-    created: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class SendEvent(BaseModel):
+    """Client sends this to send a message to the agent"""
+
     type: Literal[EventType.SEND] = EventType.SEND
     chat_id: str = Field(alias="chatId")
     message: str
     model: str | None
-    created: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ReplyEvent(BaseModel):
+    """Server sends this to reply (partially) to the client's message"""
+
     type: Literal[EventType.REPLY] = EventType.REPLY
     text: str = ""
     done: bool = False
-    created: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ErrorEvent(BaseModel):
     type: Literal[EventType.ERROR] = EventType.ERROR
     code: str
     detail: str
-    created: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 ChatEvent = Annotated[

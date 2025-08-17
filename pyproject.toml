@@ -5,20 +5,17 @@ description = "Frank chat"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "cachetools>=5.5.2",
-    "fastapi>=0.116.1",
-    "httpx>=0.28.1",
-    "logfire[fastapi]>=4.0.0",
-    "promptlayer>=1.0.64",
-    "pydantic>=2.11.7",
-    "pydantic-ai>=0.4.9",
-    "pydantic-settings>=2.10.1",
-    "supabase>=2.18.1",
-    "upstash-redis>=1.4.0",
+  "cachetools>=5.5.2",
+  "fastapi>=0.116.1",
+  "httpx>=0.28.1",
+  "logfire[fastapi]>=4.0.0",
+  "promptlayer>=1.0.64",
+  "pydantic>=2.11.7",
+  "pydantic-ai>=0.4.9",
+  "pydantic-settings>=2.10.1",
+  "supabase>=2.18.1",
+  "upstash-redis>=1.4.0",
 ]
 
 [dependency-groups]
-dev = [
-    "clai>=0.4.9",
-    "pydantic-to-typescript>=2.0.0",
-]
+dev = ["clai>=0.4.9", "pydantic-to-typescript>=2.0.0"]

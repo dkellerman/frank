@@ -7,7 +7,7 @@ export const createSettingsSlice: StateCreator<SettingsState, [], [], SettingsSt
 ) => {
   return {
     models: [],
-    model: null as any,
+    model: null,
     setModel: (id: string) => set({ model: get().models.find((model) => model.id === id)! }),
     setModels: (models: ChatModel[]) => {
       const currentModel = get().model;

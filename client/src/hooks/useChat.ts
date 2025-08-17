@@ -29,7 +29,7 @@ export default function useChat(chatId?: string) {
         sendJsonMessage({
           type: EventType.INITIALIZE,
           chatId,
-          created: new Date().toISOString(),
+          ts: new Date().toISOString(),
         });
         console.log('ws open');
       },
@@ -56,16 +56,16 @@ export default function useChat(chatId?: string) {
           type: EventType.SEND,
           chatId,
           message,
-          model: model?.id,
-          created: new Date().toISOString(),
+          model: model?.id ?? null,
+          ts: new Date().toISOString(),
         };
         sendJsonMessage(event);
       } else {
         const newChat: NewChatEvent = {
           type: EventType.NEW_CHAT,
           message,
-          model: model?.id,
-          created: new Date().toISOString(),
+          model: model?.id ?? null,
+          ts: new Date().toISOString(),
         };
         sendJsonMessage(newChat);
       }

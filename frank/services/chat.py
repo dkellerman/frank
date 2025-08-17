@@ -28,7 +28,7 @@ async def save_chat(chat: Chat) -> None:
     """Save a chat session to Redis"""
     redis = get_redis()
 
-    chat.updated = datetime.now(timezone.utc)
+    chat.updated_at = datetime.now(timezone.utc)
     chat_data = chat.model_dump(by_alias=True, mode="json")
     chat_data["history"] = json.loads(ModelMessagesTypeAdapter.dump_json(chat.history))
 
@@ -41,7 +41,6 @@ async def save_chat(chat: Chat) -> None:
 
 def make_user_chat(chat: Chat) -> UserChat:
     """Make a UserChat model from a Chat model to send to the client"""
-
     return UserChat(
         **chat.model_dump(by_alias=True),
         history=[
@@ -53,7 +52,7 @@ def make_user_chat(chat: Chat) -> UserChat:
                     if isinstance(part, (UserPromptPart, TextPart))
                     and getattr(part, "content", None)
                 ),
-                created=getattr(
+                ts=getattr(
                     msg.parts[0],
                     "timestamp",
                     getattr(msg, "timestamp", datetime.now(timezone.utc)),

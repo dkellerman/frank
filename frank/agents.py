@@ -1,10 +1,11 @@
 from typing import Awaitable, Callable, AsyncGenerator
 from cachetools.func import LRUCache, TTLCache, cached
+from openai import AsyncOpenAI
 from pydantic_ai import Agent
 from pydantic_ai.messages import ModelMessage
 from pydantic_ai.result import StreamedRunResult
 from pydantic_ai.models.openai import OpenAIModel
-from pydantic_ai.providers.openrouter import OpenRouterProvider
+from pydantic_ai.providers.openai import OpenAIProvider
 from promptlayer import PromptLayer
 from frank.core.config import settings
 from frank.schemas import AgentQuery, ChatModel
@@ -27,24 +28,57 @@ MODELS = [
 
 DEFAULT_MODEL = next((m for m in MODELS if m.is_default), MODELS[0])
 
-OnDoneCallback = Callable[[AgentQuery, StreamedRunResult], Awaitable[None]]
-
 promptlayer = PromptLayer(api_key=settings.PROMPTLAYER_API_KEY)
+
 base_agent = Agent(instrument=True)
 
 
 @cached(cache=LRUCache(maxsize=32))
-def get_openrouter_model(slug: str) -> OpenAIModel:
+def get_model(slug: str) -> OpenAIModel:
+    client = AsyncOpenAI(
+        api_key=settings.OPENROUTER_API_KEY,
+        base_url="https://openrouter.helicone.ai/api/v1",
+        default_headers={
+            "Helicone-Auth": f"Bearer {settings.HELICONE_API_KEY}",
+            "X-Title": "Frank",
+            "HTTP-Referer": (
+                "https://frank.xfr.llc"
+                if settings.APP_ENV == "production"
+                else "https://frankdev.xfr.llc"
+            ),
+        },
+    )
     return OpenAIModel(
         slug,
-        provider=OpenRouterProvider(api_key=settings.OPENROUTER_API_KEY),
+        provider=OpenAIProvider(openai_client=client),
     )
 
 
 @base_agent.system_prompt
 @cached(cache=TTLCache(maxsize=32, ttl=300))
-def base_agent_system_prompt():
+def base_agent_system_prompt() -> str:
     return str(promptlayer.templates.get("Frank System Prompt"))
+
+    # Not currently working...
+    # resp = httpx.post(
+    #     "https://api.helicone.ai/v1/prompt/version/query",
+    #     headers={
+    #         "authorization": f"{settings.HELICONE_API_KEY}",
+    #         "accept": "application/json",
+    #     },
+    #     json={"filter": {"id": {"equals": "BZTz2g"}}, "limit": 1},
+    #     timeout=10,
+    # )
+    # try:
+    #     resp.raise_for_status()
+    # except httpx.HTTPStatusError as e:
+    #     raise RuntimeError(f"Helicone compile failed: {resp.text}") from e
+    # rows = resp.json()
+    # data = rows[0]
+    # return data["helicone_template"]
+
+
+OnDoneCallback = Callable[[AgentQuery, StreamedRunResult], Awaitable[None]]
 
 
 async def stream_agent_response(
@@ -62,7 +96,7 @@ async def stream_agent_response(
     async with base_agent.run_stream(
         prompt,
         message_history=history or [],
-        model=get_openrouter_model(model),
+        model=get_model(model),
     ) as result:
         async for text in result.stream_text(delta=True):
             output.append(text)

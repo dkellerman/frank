@@ -1,4 +1,5 @@
 import type * as types from '@/lib/pydantic-types';
+import type { User } from '@supabase/supabase-js';
 
 export type ChatEvent =
   | types.ErrorEvent
@@ -22,6 +23,7 @@ export const EventType = {
 export type EventTypeValue = (typeof EventType)[keyof typeof EventType];
 
 export type ThemeMode = 'light' | 'dark' | 'system';
+
 export interface ChatState {
   history: types.ChatEntry[];
   setHistory: (history: types.ChatEntry[]) => void;
@@ -34,9 +36,10 @@ export interface ChatState {
   sendMessage: (message: string) => void;
   loadChat: (chatId: string) => Promise<void>;
 }
+
 export interface SettingsState {
   models: types.ChatModel[];
-  model: types.ChatModel;
+  model: types.ChatModel | null;
   setModel: (id: string) => void;
   setModels: (models: types.ChatModel[]) => void;
   themeMode: ThemeMode;
@@ -45,7 +48,7 @@ export interface SettingsState {
 }
 
 export interface AuthState {
-  user: any | null;
+  user: User | null;
   authToken: string | null;
   authLoading: boolean;
   signInAnonymously: () => Promise<void>;

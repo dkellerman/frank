@@ -5,19 +5,27 @@
 /* Do not modify it by hand - just update the pydantic models and then re-run the script
 */
 
+/**
+ * User query to the agent and result
+ */
 export interface AgentQuery {
   prompt: string;
   model: string;
   result?: string | null;
-  created?: string;
+  ts?: string;
 }
+/**
+ * Chat session for server
+ */
 export interface Chat {
   id: string;
   userId: string;
+  title?: string | null;
+  model?: string | null;
   curQuery?: AgentQuery | null;
   pending?: boolean;
-  created?: string;
-  updated?: string;
+  ts?: string;
+  updatedAt?: string;
 }
 /**
  * Minimal chat entry for client-side history
@@ -25,7 +33,7 @@ export interface Chat {
 export interface ChatEntry {
   role: "user" | "assistant";
   content: string;
-  created?: string;
+  ts?: string;
 }
 /**
  * LLM model configuration
@@ -39,49 +47,73 @@ export interface ErrorEvent {
   type?: "error";
   code: string;
   detail: string;
-  created?: string;
+  ts?: string;
 }
+/**
+ * Server sends this to acknowledge the client's initialization request
+ */
 export interface InitializeAckEvent {
   type?: "initialize_ack";
   chatId?: string | null;
   models: ChatModel[];
-  created?: string;
+  ts?: string;
 }
+/**
+ * Client sends this first to initialize a chat session
+ */
 export interface InitializeEvent {
   type?: "initialize";
   chatId?: string | null;
-  created?: string;
+  ts?: string;
 }
+/**
+ * Server sends this to acknowledge the client's new chat request and
+ * send the new chat ID
+ */
 export interface NewChatAckEvent {
   type?: "new_chat_ack";
   chatId: string;
-  created?: string;
+  ts?: string;
 }
+/**
+ * Client sends this to start a new chat session
+ */
 export interface NewChatEvent {
   type?: "new_chat";
   message: string;
   model: string;
-  created?: string;
+  ts?: string;
 }
+/**
+ * Server sends this to reply (partially) to the client's message
+ */
 export interface ReplyEvent {
   type?: "reply";
   text?: string;
   done?: boolean;
-  created?: string;
+  ts?: string;
 }
+/**
+ * Client sends this to send a message to the agent
+ */
 export interface SendEvent {
   type?: "send";
   chatId: string;
   message: string;
   model: string | null;
-  created?: string;
+  ts?: string;
 }
+/**
+ * Chat session for client, with history converted to ChatEntry list
+ */
 export interface UserChat {
   id: string;
   userId: string;
-  history?: ChatEntry[];
+  title?: string | null;
+  model?: string | null;
   curQuery?: AgentQuery | null;
   pending?: boolean;
-  created?: string;
-  updated?: string;
+  ts?: string;
+  updatedAt?: string;
+  history?: ChatEntry[];
 }
