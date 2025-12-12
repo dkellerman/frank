@@ -14,12 +14,13 @@ class Chat(BaseModel):
     model: str | None = None
     cur_query: "AgentQuery | None" = Field(default=None, alias="curQuery")
     pending: bool = False
+    last_seq: int = Field(default=0, exclude=True, alias="lastSeq")
     ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc), alias="updatedAt"
     )
     # server-side history has pydantic-ai ModelMessage list, which needs to be
-    # serialized to_jsonable_python for storage
+    # serialized to json for storage (using type adapter)
     history: list[ModelMessage] = Field(default_factory=list, exclude=True)
 
 

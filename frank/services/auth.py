@@ -1,12 +1,12 @@
 from typing import Annotated
 from fastapi import Depends, HTTPException, status, Query, Header
 from supabase_auth.types import User
-from frank.core.supabase import supabase_client
+from frank.core.supabase import get_supabase_client
 
 
 async def get_user_from_token(token: str) -> User | None:
     try:
-        user = supabase_client.auth.get_user(token)
+        user = get_supabase_client().auth.get_user(token)
         return user.user
     except Exception:
         return None

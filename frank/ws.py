@@ -1,5 +1,4 @@
 import json
-import uuid
 import pydantic
 import logfire
 from fastapi import WebSocket, WebSocketDisconnect
@@ -97,10 +96,9 @@ class ChatWebSocketHandler:
 
     async def handle_new_chat(self, event: NewChatEvent):
         # create/save new chat and send back ack
-        chat_id = str(uuid.uuid4())
-        chat = Chat(id=chat_id, userId=self.user.id, pending=True)
+        chat = Chat(userId=self.user.id, pending=True)
         chat.cur_query = AgentQuery(prompt=event.message, model=event.model)
-        await save_chat(chat)
+        chat_id = await save_chat(chat)
 
         await self.send_to_user(NewChatAckEvent(chatId=chat_id))
 
