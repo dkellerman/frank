@@ -1,7 +1,12 @@
-from fastapi import APIRouter, HTTPException
+import uuid
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy import delete
+from sqlalchemy.ext.asyncio import AsyncSession
 from frank.services.chat import ChatRequired, make_user_chat
-from frank.services.auth import UserRequired
-from frank.schemas import UserChat
+from frank.services.auth import UserRequired, create_anonymous_user
+from frank.core.db import get_session
+from frank.schemas import UserChat, AuthAnonymousResponse
+from frank.db.models import AuthToken as DbAuthToken
 
 
 router = APIRouter()
@@ -20,3 +25,23 @@ async def get_chat(chat: ChatRequired, user: UserRequired) -> UserChat:
 @router.get("/api/healthz")
 async def healthz() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@router.post("/api/auth/anonymous", response_model=AuthAnonymousResponse)
+async def auth_anonymous(
+    session: AsyncSession = Depends(get_session),
+) -> AuthAnonymousResponse:
+    user, token = await create_anonymous_user(session)
+    return AuthAnonymousResponse(user={"id": str(user.id)}, authToken=token.token)
+
+
+@router.post("/api/auth/logout")
+async def auth_logout(
+    user: UserRequired,
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, bool]:
+    await session.execute(
+        delete(DbAuthToken).where(DbAuthToken.user_id == uuid.UUID(user.id))
+    )
+    await session.commit()
+    return {"ok": True}

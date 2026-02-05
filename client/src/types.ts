@@ -1,5 +1,4 @@
 import type * as types from '@/lib/pydantic-types';
-import type { User } from '@supabase/supabase-js';
 
 export type ChatEvent =
   | types.ErrorEvent
@@ -48,7 +47,7 @@ export interface SettingsState {
 }
 
 export interface AuthState {
-  user: User | null;
+  user: types.AuthUserOut | null;
   authToken: string | null;
   authLoading: boolean;
   signInAnonymously: () => Promise<void>;
