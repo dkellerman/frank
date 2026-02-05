@@ -59,6 +59,15 @@ class AgentQuery(BaseModel):
     ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+class AuthUserOut(BaseModel):
+    id: str
+
+
+class AuthAnonymousResponse(BaseModel):
+    user: AuthUserOut
+    auth_token: str = Field(alias="authToken")
+
+
 # --------- Events ---------
 
 

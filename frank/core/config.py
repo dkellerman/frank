@@ -8,8 +8,7 @@ class Settings(BaseSettings):
     UPSTASH_REDIS_REST_TOKEN: str
     OPENROUTER_API_KEY: str
     HELICONE_API_KEY: str
-    VITE_SUPABASE_URL: str
-    VITE_SUPABASE_ANON_KEY: str
+    DATABASE_URL: str
     PROMPTLAYER_API_KEY: str
 
     model_config = SettingsConfigDict(

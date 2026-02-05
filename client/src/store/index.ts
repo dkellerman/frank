@@ -20,6 +20,8 @@ export const useStore = create<StoreState>()(
         partialize: (state) => ({
           model: state.model,
           themeMode: state.themeMode,
+          authToken: state.authToken,
+          user: state.user,
         }),
       }
     )

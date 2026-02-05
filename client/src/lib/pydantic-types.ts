@@ -14,6 +14,13 @@ export interface AgentQuery {
   result?: string | null;
   ts?: string;
 }
+export interface AuthAnonymousResponse {
+  user: AuthUserOut;
+  authToken: string;
+}
+export interface AuthUserOut {
+  id: string;
+}
 /**
  * Chat session for server
  */

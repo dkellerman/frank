@@ -1,6 +1,5 @@
 import { type StateCreator } from 'zustand';
-import type { AuthState } from '@/types';
-import { supabase } from '@/supabase';
+import type { AuthState, AuthAnonymousResponse } from '@/types';
 
 export const createAuthSlice: StateCreator<AuthState, [], [], AuthState> = (set, get) => {
   return {
@@ -10,35 +9,26 @@ export const createAuthSlice: StateCreator<AuthState, [], [], AuthState> = (set,
 
     signInAnonymously: async () => {
       set({ authLoading: true });
-      const { data, error } = await supabase.auth.signInAnonymously();
-
-      if (error) {
+      const resp = await fetch('/api/auth/anonymous', { method: 'POST' });
+      if (!resp.ok) {
         set({ authLoading: false });
-        throw error;
+        throw new Error(`Auth failed: ${resp.status}`);
       }
-
+      const data = (await resp.json()) as AuthAnonymousResponse;
       set({
         user: data.user,
-        authToken: data.session?.access_token || null,
+        authToken: data.authToken || null,
         authLoading: false,
       });
     },
 
     initAuth: async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (session) {
-        console.log('session', session);
-        set({
-          user: session.user,
-          authToken: session.access_token,
-        });
-      } else {
-        console.log('no session, signing in anonymously');
-        await get().signInAnonymously();
+      if (get().authToken) {
+        console.log('auth: user', { userId: get().user?.id });
+        return;
       }
+      await get().signInAnonymously();
+      console.log('auth: user', { userId: get().user?.id });
     },
   };
 };

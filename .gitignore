@@ -9,3 +9,4 @@ wheels/
 local/
 .DS_Store
 .ruff_cache
+frank.db
