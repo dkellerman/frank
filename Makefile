@@ -18,3 +18,10 @@ lint:
 
 pydantic2ts:
 	PYTHONPATH=. uv run pydantic2ts --module frank.schemas --output client/src/lib/pydantic-types.ts
+
+db-migrate:
+	uv run alembic upgrade head
+
+db-update:
+	@test -n "$(MSG)" || (echo "Usage: make db-migrate MSG=\"...\""; exit 1)
+	uv run alembic revision --autogenerate -m "$(MSG)"
