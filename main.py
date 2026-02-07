@@ -1,8 +1,10 @@
 import uvicorn
-from fastapi import FastAPI, WebSocket
+from fastapi import Depends, FastAPI, WebSocket
+from sqlalchemy.ext.asyncio import AsyncSession
 from frank.ws import ChatWebSocketHandler
 from frank.core.logging import configure_logging
 from frank.api.routes import router as api_router
+from frank.core.db import get_session
 from frank.services.auth import UserRequired
 
 app = FastAPI()
@@ -12,8 +14,12 @@ app.include_router(api_router)
 
 
 @app.websocket("/ws/chat")
-async def chat_ws(ws: WebSocket, user: UserRequired):
-    await ChatWebSocketHandler(ws, user).run()
+async def chat_ws(
+    ws: WebSocket,
+    user: UserRequired,
+    session: AsyncSession = Depends(get_session),
+):
+    await ChatWebSocketHandler(ws, user, session).run()
 
 
 if __name__ == "__main__":

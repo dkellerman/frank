@@ -2,6 +2,7 @@ import json
 import pydantic
 import logfire
 from fastapi import WebSocket, WebSocketDisconnect
+from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic_ai.result import StreamedRunResult
 from frank.agents import stream_agent_response, MODELS
 from frank.services.chat import load_chat, save_chat, HISTORY_LENGTH
@@ -26,9 +27,10 @@ class ChatWebSocketHandler:
         "Cannot call 'receive' once a disconnect message has been received",
     }
 
-    def __init__(self, ws: WebSocket, user: UserRequired):
+    def __init__(self, ws: WebSocket, user: UserRequired, session: AsyncSession):
         self.ws = ws
         self.user = user
+        self.session = session
         self.chat: Chat | None = None
 
     async def run(self):
@@ -80,7 +82,7 @@ class ChatWebSocketHandler:
         chat: Chat | None = None
 
         if event.chat_id:
-            chat = await load_chat(event.chat_id)
+            chat = await load_chat(event.chat_id, self.session)
             if chat and chat.user_id != self.user.id:
                 await self.send_error("Access denied", "access_denied")
                 return
@@ -98,7 +100,7 @@ class ChatWebSocketHandler:
         # create/save new chat and send back ack
         chat = Chat(userId=self.user.id, pending=True)
         chat.cur_query = AgentQuery(prompt=event.message, model=event.model)
-        chat_id = await save_chat(chat)
+        chat_id = await save_chat(chat, self.session)
 
         await self.send_to_user(NewChatAckEvent(chatId=chat_id))
 
@@ -148,7 +150,7 @@ class ChatWebSocketHandler:
         chat.history = chat.history[-HISTORY_LENGTH:]
         chat.cur_query = query
         chat.pending = False
-        await save_chat(chat)
+        await save_chat(chat, self.session)
 
     async def send_to_user(self, response: ChatEvent):
         await self.ws.send_json(response.model_dump(by_alias=True, mode="json"))
