@@ -4,7 +4,7 @@ import logfire
 from fastapi import WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic_ai.result import StreamedRunResult
-from frank.agents import stream_agent_response, MODELS
+from frank.agents import stream_agent_response, MODELS, DEFAULT_MODEL
 from frank.services.chat import load_chat, save_chat, HISTORY_LENGTH
 from frank.services.auth import UserRequired
 from frank.schemas import (
@@ -98,8 +98,9 @@ class ChatWebSocketHandler:
 
     async def handle_new_chat(self, event: NewChatEvent):
         # create/save new chat and send back ack
+        model = event.model or DEFAULT_MODEL.id
         chat = Chat(userId=self.user.id, pending=True)
-        chat.cur_query = AgentQuery(prompt=event.message, model=event.model)
+        chat.cur_query = AgentQuery(prompt=event.message, model=model)
         chat_id = await save_chat(chat, self.session)
 
         await self.send_to_user(NewChatAckEvent(chatId=chat_id))

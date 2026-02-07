@@ -22,4 +22,4 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["clai>=0.4.9", "pydantic-to-typescript>=2.0.0"]
+dev = ["clai>=0.4.9", "pydantic-to-typescript>=2.0.0", "pytest>=8.0", "pytest-asyncio>=1.0"]

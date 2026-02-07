@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field, Discriminator
 class Chat(BaseModel):
     """Chat session for server"""
 
-    id: str
+    id: str = ""
     user_id: str = Field(alias="userId")
     title: str | None = None
     model: str | None = None
@@ -103,7 +103,7 @@ class NewChatEvent(BaseModel):
 
     type: Literal[EventType.NEW_CHAT] = EventType.NEW_CHAT
     message: str
-    model: str
+    model: str | None = None
     ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
