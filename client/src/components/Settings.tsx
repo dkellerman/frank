@@ -3,15 +3,13 @@ import { useStore } from '@/store';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-  DrawerClose,
-  DrawerFooter,
-  DrawerDescription,
-} from '@/components/ui/drawer';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetDescription,
+} from '@/components/ui/sheet';
 import {
   Select,
   SelectContent,
@@ -24,13 +22,12 @@ export default function SettingsDrawer() {
   const { model, models, setModel, themeMode, themeLabel, setThemeMode } = useStore();
 
   return (
-    <Drawer
-      direction="right"
+    <Sheet
       onOpenChange={(open) => {
         if (open) (document.activeElement as HTMLElement | null)?.blur();
       }}
     >
-      <DrawerTrigger asChild>
+      <SheetTrigger asChild>
         <Button
           variant="ghost"
           size="icon"
@@ -41,13 +38,13 @@ export default function SettingsDrawer() {
         >
           <Settings className={cn('h-6 w-6')} />
         </Button>
-      </DrawerTrigger>
-      <DrawerContent>
-        <DrawerDescription className={cn('sr-only')}>Settings drawer</DrawerDescription>
-        <DrawerHeader>
-          <DrawerTitle>Settings</DrawerTitle>
-        </DrawerHeader>
-        <div className={cn('p-4 pt-2 flex flex-col gap-4')}>
+      </SheetTrigger>
+      <SheetContent>
+        <SheetDescription className={cn('sr-only')}>Settings panel</SheetDescription>
+        <SheetHeader>
+          <SheetTitle>Settings</SheetTitle>
+        </SheetHeader>
+        <div className={cn('mt-6 flex flex-col gap-4')}>
           <div className={cn('flex items-center gap-2')}>
             <span className={cn('text-sm text-muted-foreground w-20 shrink-0')}>Theme:</span>
             <Select value={themeMode} onValueChange={setThemeMode}>
@@ -78,12 +75,7 @@ export default function SettingsDrawer() {
             </Select>
           </div>
         </div>
-        <DrawerFooter>
-          <DrawerClose asChild>
-            <Button variant="outline">Close</Button>
-          </DrawerClose>
-        </DrawerFooter>
-      </DrawerContent>
-    </Drawer>
+      </SheetContent>
+    </Sheet>
   );
 }
