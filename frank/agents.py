@@ -1,5 +1,5 @@
 from typing import Awaitable, Callable, AsyncGenerator
-from cachetools.func import LRUCache, TTLCache, cached
+from cachetools import LRUCache, TTLCache, cached
 from openai import AsyncOpenAI
 from pydantic_ai import Agent
 from pydantic_ai.messages import ModelMessage
@@ -13,7 +13,7 @@ from frank.schemas import AgentQuery, ChatModel
 
 # openrouter models
 MODELS = [
-    ChatModel(id="google/gemini-2.5-flash", label="Gemini 2.5 Flash", isDefault=True),
+    ChatModel(id="google/gemini-2.5-flash", label="Gemini 2.5 Flash"),
     ChatModel(id="openai/gpt-5", label="GPT-5"),
     ChatModel(id="openai/gpt-5-mini", label="GPT-5 Mini"),
     ChatModel(id="openai/gpt-5-nano", label="GPT-5 Nano"),
@@ -22,7 +22,11 @@ MODELS = [
     ChatModel(id="anthropic/claude-sonnet-4", label="Claude Sonnet 4"),
     ChatModel(id="anthropic/claude-4.1", label="Claude 4.1"),
     ChatModel(id="x-ai/grok-4", label="Grok 4"),
-    ChatModel(id="meta-llama/llama-4-scout-17b-16e-instruct", label="Llama 4 Scout"),
+    ChatModel(
+        id="meta-llama/llama-4-scout-17b-16e-instruct",
+        label="Llama 4 Scout",
+        isDefault=True,
+    ),
     ChatModel(id="meta-llama/llama-3.1-8b-instruct:free", label="Llama 3.1 8B (free)"),
 ]
 

@@ -1,4 +1,4 @@
-from cachetools.func import cached, LRUCache
+from cachetools import cached, LRUCache
 from upstash_redis.asyncio import Redis
 from frank.core.config import settings
 

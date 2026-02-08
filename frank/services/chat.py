@@ -23,24 +23,30 @@ CHAT_TTL = 60 * 60 * 24
 
 
 async def load_chat(chat_id: str, session: AsyncSession) -> Chat | None:
-    """Load a chat session from Redis"""
+    """Load a chat session from Redis, falling back to DB"""
     redis = get_redis()
 
     # fetch from cache
-    cached = await redis.get(_make_key(chat_id))
+    try:
+        cached = await redis.get(_make_key(chat_id))
 
-    if cached:
-        if isinstance(cached, (str, bytes)):
-            return Chat.model_validate_json(cached)
-        return Chat.model_validate(cached)
+        if cached:
+            if isinstance(cached, (str, bytes)):
+                return Chat.model_validate_json(cached)
+            return Chat.model_validate(cached)
+    except Exception as e:
+        logfire.error(f"Error reading chat from Redis: {e}")
 
     chat = await _fetch_chat(session, chat_id)
     if chat:
-        chat_data = chat.model_dump(by_alias=True, mode="json")
-        chat_data["history"] = json.loads(
-            ModelMessagesTypeAdapter.dump_json(chat.history)
-        )
-        await redis.setex(_make_key(chat.id), CHAT_TTL, chat_data)
+        try:
+            chat_data = chat.model_dump(by_alias=True, mode="json")
+            chat_data["history"] = json.loads(
+                ModelMessagesTypeAdapter.dump_json(chat.history)
+            )
+            await redis.setex(_make_key(chat.id), CHAT_TTL, chat_data)
+        except Exception as e:
+            logfire.error(f"Error caching chat to Redis: {e}")
 
     return chat
 

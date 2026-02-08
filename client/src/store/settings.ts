@@ -26,9 +26,14 @@ export const createSettingsSlice: StateCreator<SettingsState, [], [], SettingsSt
   };
 };
 
-export function setupThemeSubscription(useStore: any) {
+export function setupThemeSubscription(useStore: {
+  subscribe: (
+    selector: (state: { themeMode: ThemeMode }) => ThemeMode,
+    listener: (themeMode: ThemeMode) => void
+  ) => void;
+}) {
   useStore.subscribe(
-    (state: any) => state.themeMode,
+    (state) => state.themeMode,
     (themeMode: ThemeMode) => {
       const isDark =
         themeMode === 'dark' ||

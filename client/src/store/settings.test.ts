@@ -8,6 +8,7 @@ function createTestStore(): SettingsState {
     Object.assign(state, partial);
   };
   const get = () => state;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   state = createSettingsSlice(set as any, get as any, {} as any);
   return state;
 }

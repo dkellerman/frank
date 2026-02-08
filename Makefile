@@ -10,6 +10,9 @@ dev:
 devc:
 	cd client && npm run dev
 
+devall:
+	uv run honcho start -f Procfile.dev
+
 clai:
 	uv run clai -a frank.agents:base_agent
 

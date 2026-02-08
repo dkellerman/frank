@@ -2,7 +2,7 @@ import enum
 from datetime import datetime, timezone
 from typing import Annotated, Literal
 from pydantic_ai.messages import ModelMessage
-from pydantic import BaseModel, Field, Discriminator
+from pydantic import BaseModel, ConfigDict, Field, Discriminator
 
 
 class Chat(BaseModel):
@@ -29,9 +29,7 @@ class UserChat(Chat):
 
     history: list["ChatEntry"] = Field(default_factory=list)
 
-    class Config:
-        arbitrary_types_allowed = True
-        extra = "forbid"
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
 
 
 class ChatEntry(BaseModel):

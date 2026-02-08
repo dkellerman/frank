@@ -25,13 +25,13 @@ export default function ChatInput({ placeholder = 'What can I do you for?' }: Pr
     ''
   );
 
-  useEffect(() => {
-    if (!sending && !loading) focusInput();
-  }, [loading, sending]);
-
   function focusInput() {
     setTimeout(() => inputRef.current?.focus(), 100);
   }
+
+  useEffect(() => {
+    if (!sending && !loading) focusInput();
+  }, [loading, sending]);
 
   // Enable unless input is blank
   const isDisabled = !connected || !text.trim();

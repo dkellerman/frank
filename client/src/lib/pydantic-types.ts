@@ -38,7 +38,7 @@ export interface Chat {
  * Minimal chat entry for client-side history
  */
 export interface ChatEntry {
-  role: "user" | "assistant";
+  role: 'user' | 'assistant';
   content: string;
   ts?: string;
 }
@@ -51,7 +51,7 @@ export interface ChatModel {
   isDefault?: boolean;
 }
 export interface ErrorEvent {
-  type?: "error";
+  type?: 'error';
   code: string;
   detail: string;
   ts?: string;
@@ -60,7 +60,7 @@ export interface ErrorEvent {
  * Server sends this to acknowledge the client's initialization request
  */
 export interface InitializeAckEvent {
-  type?: "initialize_ack";
+  type?: 'initialize_ack';
   chatId?: string | null;
   models: ChatModel[];
   ts?: string;
@@ -69,7 +69,7 @@ export interface InitializeAckEvent {
  * Client sends this first to initialize a chat session
  */
 export interface InitializeEvent {
-  type?: "initialize";
+  type?: 'initialize';
   chatId?: string | null;
   ts?: string;
 }
@@ -78,7 +78,7 @@ export interface InitializeEvent {
  * send the new chat ID
  */
 export interface NewChatAckEvent {
-  type?: "new_chat_ack";
+  type?: 'new_chat_ack';
   chatId: string;
   ts?: string;
 }
@@ -86,16 +86,16 @@ export interface NewChatAckEvent {
  * Client sends this to start a new chat session
  */
 export interface NewChatEvent {
-  type?: "new_chat";
+  type?: 'new_chat';
   message: string;
-  model: string;
+  model?: string | null;
   ts?: string;
 }
 /**
  * Server sends this to reply (partially) to the client's message
  */
 export interface ReplyEvent {
-  type?: "reply";
+  type?: 'reply';
   text?: string;
   done?: boolean;
   ts?: string;
@@ -104,7 +104,7 @@ export interface ReplyEvent {
  * Client sends this to send a message to the agent
  */
 export interface SendEvent {
-  type?: "send";
+  type?: 'send';
   chatId: string;
   message: string;
   model: string | null;

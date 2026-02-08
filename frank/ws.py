@@ -115,25 +115,33 @@ class ChatWebSocketHandler:
         async def _on_done(query: AgentQuery, result: StreamedRunResult):
             await self.handle_agent_done(query, result, self.chat)
 
-        async for chunk in stream_agent_response(
-            event.message,
-            model=event.model if event.model else None,
-            history=self.chat.history,
-            on_done=_on_done,
-        ):
-            await self.send_to_user(ReplyEvent(text=chunk, done=False))
+        try:
+            async for chunk in stream_agent_response(
+                event.message,
+                model=event.model if event.model else None,
+                history=self.chat.history,
+                on_done=_on_done,
+            ):
+                await self.send_to_user(ReplyEvent(text=chunk, done=False))
+        except Exception as e:
+            logfire.error(f"Agent error in handle_send: {e}")
+            await self.send_error(str(e), "agent_error")
 
     async def stream_response(self, query: AgentQuery, chat: Chat):
         async def _on_done(q: AgentQuery, result: StreamedRunResult):
             await self.handle_agent_done(q, result, chat)
 
-        async for chunk in stream_agent_response(
-            query.prompt,
-            model=query.model,
-            history=chat.history,
-            on_done=_on_done,
-        ):
-            await self.send_to_user(ReplyEvent(text=chunk, done=False))
+        try:
+            async for chunk in stream_agent_response(
+                query.prompt,
+                model=query.model,
+                history=chat.history,
+                on_done=_on_done,
+            ):
+                await self.send_to_user(ReplyEvent(text=chunk, done=False))
+        except Exception as e:
+            logfire.error(f"Agent error in stream_response: {e}")
+            await self.send_error(str(e), "agent_error")
 
     async def handle_agent_done(
         self,

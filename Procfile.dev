@@ -1,0 +1,2 @@
+server: uv run main.py
+client: cd client && npm run dev
