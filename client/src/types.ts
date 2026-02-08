@@ -39,6 +39,7 @@ export interface ChatState {
 export interface SettingsState {
   models: types.ChatModel[];
   model: types.ChatModel | null;
+  userSelectedModel: boolean;
   setModel: (id: string) => void;
   setModels: (models: types.ChatModel[]) => void;
   themeMode: ThemeMode;

@@ -8,12 +8,16 @@ export const createSettingsSlice: StateCreator<SettingsState, [], [], SettingsSt
   return {
     models: [],
     model: null,
-    setModel: (id: string) => set({ model: get().models.find((model) => model.id === id)! }),
+    userSelectedModel: false,
+    setModel: (id: string) =>
+      set({ model: get().models.find((model) => model.id === id)!, userSelectedModel: true }),
     setModels: (models: ChatModel[]) => {
       const currentModel = get().model;
+      const userSelected = get().userSelectedModel;
       const defaultModel = models.find((m) => m.isDefault) || models[0];
       const validModel =
-        (currentModel && models.find((m) => m.id === currentModel.id)) || defaultModel;
+        (userSelected && currentModel && models.find((m) => m.id === currentModel.id)) ||
+        defaultModel;
       set({ models, model: validModel });
     },
     themeMode: 'system' as ThemeMode,

@@ -56,11 +56,31 @@ describe('settings store slice', () => {
     expect(store.model?.id).toBe('gpt-4');
   });
 
+  it('setModels uses new default when user has not explicitly selected a model', () => {
+    store.setModels(mockModels);
+    expect(store.model?.id).toBe('claude'); // initial default
+
+    // Server sends updated models with a different default
+    const newModels = mockModels.map((m) => ({
+      ...m,
+      isDefault: m.id === 'gemini',
+    }));
+    store.setModels(newModels);
+    expect(store.model?.id).toBe('gemini'); // follows new default
+  });
+
   it('setModel selects a model by id', () => {
     store.setModels(mockModels);
     store.setModel('gemini');
     expect(store.model?.id).toBe('gemini');
     expect(store.model?.label).toBe('Gemini');
+  });
+
+  it('setModel marks userSelectedModel as true', () => {
+    store.setModels(mockModels);
+    expect(store.userSelectedModel).toBe(false);
+    store.setModel('gpt-4');
+    expect(store.userSelectedModel).toBe(true);
   });
 
   it('setThemeMode updates mode and label', () => {
