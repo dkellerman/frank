@@ -1,12 +1,12 @@
 import uuid
 from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from frank.services.chat import ChatRequired, make_user_chat
 from frank.services.auth import UserRequired, create_anonymous_user
 from frank.core.db import get_session
-from frank.schemas import UserChat, AuthAnonymousResponse, AuthUserOut
-from frank.db.models import AuthToken as DbAuthToken
+from frank.schemas import UserChat, AuthAnonymousResponse, AuthUserOut, ChatSummary
+from frank.db.models import AuthToken as DbAuthToken, ChatSession
 
 
 router = APIRouter()
@@ -20,6 +20,25 @@ async def get_chat(chat: ChatRequired, user: UserRequired) -> UserChat:
 
     user_chat = make_user_chat(chat)
     return user_chat.model_dump(by_alias=True, mode="json")
+
+
+@router.get("/api/chats")
+async def list_chats(
+    user: UserRequired,
+    session: AsyncSession = Depends(get_session),
+) -> list[ChatSummary]:
+    """List chat sessions for the authenticated user"""
+    result = await session.execute(
+        select(ChatSession)
+        .where(ChatSession.user_id == uuid.UUID(user.id))
+        .order_by(ChatSession.ts.desc())
+        .limit(50)
+    )
+    rows = result.scalars().all()
+    return [
+        ChatSummary(id=str(r.id), title=r.title, ts=r.ts)
+        for r in rows
+    ]
 
 
 @router.get("/api/healthz")

@@ -1,3 +1,4 @@
+import asyncio
 import json
 import pydantic
 import logfire
@@ -5,7 +6,12 @@ from fastapi import WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic_ai.result import StreamedRunResult
 from frank.agents import stream_agent_response, MODELS, DEFAULT_MODEL
-from frank.services.chat import load_chat, save_chat, HISTORY_LENGTH
+from frank.services.chat import (
+    load_chat,
+    save_chat,
+    generate_and_set_title,
+    HISTORY_LENGTH,
+)
 from frank.services.auth import UserRequired
 from frank.schemas import (
     AgentQuery,
@@ -160,6 +166,10 @@ class ChatWebSocketHandler:
         chat.cur_query = query
         chat.pending = False
         await save_chat(chat, self.session)
+
+        # generate title asynchronously after first response
+        if chat.title is None:
+            asyncio.create_task(generate_and_set_title(chat, self.ws))
 
     async def send_to_user(self, response: ChatEvent):
         await self.ws.send_json(response.model_dump(by_alias=True, mode="json"))

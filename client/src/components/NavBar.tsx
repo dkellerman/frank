@@ -3,9 +3,10 @@ import { useStore } from '@/store';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import SettingsDrawer from '@/components/Settings';
+import ChatHistoryDrawer from '@/components/ChatHistory';
 
 export default function NavBar() {
-  const { startNewChat } = useStore();
+  const { startNewChat, user, chatTitle } = useStore();
 
   return (
     <div
@@ -22,12 +23,19 @@ export default function NavBar() {
         />
       </a>
 
-      {/* Right: new chat + settings */}
+      {/* Center: chat title */}
+      {chatTitle && (
+        <span className={cn('text-sm text-muted-foreground truncate max-w-xs')}>{chatTitle}</span>
+      )}
+
+      {/* Right: history + new chat + settings */}
       <div className={cn('flex items-center gap-2')}>
+        {user && <ChatHistoryDrawer />}
+
         <Button
           variant="ghost"
           size="icon"
-          className={cn('h-10 w-10 hover:bg-secondary')}
+          className={cn('h-10 w-10 hover:bg-secondary cursor-pointer')}
           onClick={startNewChat}
           title="New chat"
           aria-label="New chat"

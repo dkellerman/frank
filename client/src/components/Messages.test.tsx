@@ -2,15 +2,22 @@ import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import Messages from './Messages';
 
-vi.mock('@/store', () => ({
-  useStore: () => ({
+vi.mock('@/store', () => {
+  const state = {
     history: [
       { role: 'user', content: 'Hello' },
       { role: 'assistant', content: 'Hi there!' },
     ],
     sending: false,
-  }),
-}));
+    scrollToTop: false,
+  };
+  return {
+    useStore: Object.assign(() => state, {
+      getState: () => state,
+      setState: vi.fn(),
+    }),
+  };
+});
 
 // Mock react-virtual since it needs real DOM measurements
 vi.mock('@tanstack/react-virtual', () => ({

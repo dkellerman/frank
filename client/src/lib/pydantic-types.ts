@@ -25,7 +25,7 @@ export interface AuthUserOut {
  * Chat session for server
  */
 export interface Chat {
-  id: string;
+  id?: string;
   userId: string;
   title?: string | null;
   model?: string | null;
@@ -49,6 +49,23 @@ export interface ChatModel {
   id: string;
   label: string;
   isDefault?: boolean;
+}
+/**
+ * Minimal chat summary for history list
+ */
+export interface ChatSummary {
+  id: string;
+  title?: string | null;
+  ts?: string;
+}
+/**
+ * Server sends this when a chat title has been generated
+ */
+export interface ChatTitleEvent {
+  type?: 'chat_title';
+  chatId: string;
+  title: string;
+  ts?: string;
 }
 export interface ErrorEvent {
   type?: 'error';
@@ -114,7 +131,7 @@ export interface SendEvent {
  * Chat session for client, with history converted to ChatEntry list
  */
 export interface UserChat {
-  id: string;
+  id?: string;
   userId: string;
   title?: string | null;
   model?: string | null;

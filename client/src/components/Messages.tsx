@@ -23,10 +23,16 @@ export default function Messages() {
   useEffect(() => {
     if (history.length > 0) {
       setTimeout(() => {
-        virtualizer.scrollToIndex(history.length - 1, {
-          align: 'end',
-          behavior: 'auto',
-        });
+        const { scrollToTop } = useStore.getState();
+        if (scrollToTop) {
+          containerRef.current?.scrollTo({ top: 0 });
+          useStore.setState({ scrollToTop: false });
+        } else {
+          virtualizer.scrollToIndex(history.length - 1, {
+            align: 'end',
+            behavior: 'auto',
+          });
+        }
       }, 0);
     }
   }, [history.length, lastMessageContent, virtualizer]);

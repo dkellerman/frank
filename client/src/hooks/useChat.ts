@@ -1,8 +1,9 @@
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { flushSync } from 'react-dom';
-import { useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo, useRef } from 'react';
 import type {
   ChatEvent,
+  ChatTitleEvent,
   ErrorEvent,
   ReplyEvent,
   SendEvent,
@@ -19,6 +20,7 @@ export default function useChat(chatId?: string) {
   const { model, history, addMessage, clearHistory, setHistory, authToken } = useStore();
   const shouldConnect = useMemo(() => !!authToken, [authToken]);
   const navigate = useNavigate();
+  const prevChatIdRef = useRef(chatId);
 
   const { sendJsonMessage, lastMessage, readyState } = useWebSocket(
     `/ws/chat?token=${authToken}`,
@@ -118,6 +120,12 @@ export default function useChat(chatId?: string) {
         navigate(`/chats/${newChatId}`);
         break;
       }
+
+      case EventType.CHAT_TITLE: {
+        const { title } = event as ChatTitleEvent;
+        useStore.setState({ chatTitle: title });
+        break;
+      }
     }
   }
 
@@ -164,10 +172,23 @@ export default function useChat(chatId?: string) {
         // add placeholder message if assistant message is pending
         if (data.pending) messages.push({ role: 'assistant', content: '' });
       }
-      setHistory(messages);
+      useStore.setState({ history: messages, chatTitle: data.title ?? null, scrollToTop: true });
     },
-    [setHistory, authToken]
+    [authToken]
   );
+
+  // Load chat when chatId changes (e.g. navigating between chats via history panel)
+  useEffect(() => {
+    if (chatId && chatId !== prevChatIdRef.current && readyState === ReadyState.OPEN) {
+      loadChat(chatId);
+      sendJsonMessage({
+        type: EventType.INITIALIZE,
+        chatId,
+        ts: new Date().toISOString(),
+      });
+    }
+    prevChatIdRef.current = chatId;
+  }, [chatId, readyState, loadChat, sendJsonMessage]);
 
   useEffect(() => {
     useStore.setState({ startNewChat, sendMessage, loadChat });

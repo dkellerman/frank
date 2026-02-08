@@ -30,6 +30,7 @@
     "react-router": "^7.13.0",
     "react-use-websocket": "^4.13.0",
     "tailwind-merge": "^3.4.0",
+    "timeago.js": "^4.0.2",
     "vaul": "^1.1.2",
     "zustand": "^5.0.11"
   },

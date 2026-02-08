@@ -1,4 +1,5 @@
-import { Settings } from 'lucide-react';
+import { Settings, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router';
 import { useStore } from '@/store';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -19,7 +20,8 @@ import {
 } from '@/components/ui/select';
 
 export default function SettingsDrawer() {
-  const { model, models, setModel, themeMode, themeLabel, setThemeMode } = useStore();
+  const { model, models, setModel, themeMode, themeLabel, setThemeMode, user } = useStore();
+  const navigate = useNavigate();
 
   return (
     <Sheet
@@ -31,7 +33,7 @@ export default function SettingsDrawer() {
         <Button
           variant="ghost"
           size="icon"
-          className={cn('h-10 w-10 hover:bg-secondary')}
+          className={cn('h-10 w-10 hover:bg-secondary cursor-pointer')}
           title="Settings"
           aria-label="Open settings"
           onPointerDown={(e) => (e.currentTarget as HTMLButtonElement).blur()}
@@ -74,6 +76,19 @@ export default function SettingsDrawer() {
               </SelectContent>
             </Select>
           </div>
+
+          {user && (
+            <Button
+              variant="ghost"
+              className={cn(
+                'justify-start px-0 text-sm text-muted-foreground hover:text-foreground cursor-pointer'
+              )}
+              onClick={() => navigate('/logout')}
+            >
+              <LogOut className={cn('h-4 w-4 mr-2')} />
+              Log out
+            </Button>
+          )}
         </div>
       </SheetContent>
     </Sheet>

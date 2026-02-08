@@ -7,6 +7,7 @@ export type ChatEvent =
   | types.NewChatEvent
   | types.NewChatAckEvent
   | types.ReplyEvent
+  | types.ChatTitleEvent
   | types.SendEvent;
 
 export const EventType = {
@@ -15,6 +16,7 @@ export const EventType = {
   NEW_CHAT: 'new_chat',
   NEW_CHAT_ACK: 'new_chat_ack',
   REPLY: 'reply',
+  CHAT_TITLE: 'chat_title',
   SEND: 'send',
   ERROR: 'error',
 } as const;
@@ -25,6 +27,8 @@ export type ThemeMode = 'light' | 'dark' | 'system';
 
 export interface ChatState {
   history: types.ChatEntry[];
+  chatTitle: string | null;
+  scrollToTop: boolean;
   setHistory: (history: types.ChatEntry[]) => void;
   clearHistory: () => void;
   addMessage: (message: types.ChatEntry) => void;
