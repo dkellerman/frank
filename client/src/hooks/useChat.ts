@@ -33,6 +33,12 @@ export default function useChat(chatId?: string) {
         });
         console.log('ws open');
       },
+      onClose: async (event) => {
+        if (event.code === 1008 || event.code === 4401 || event.code === 1006) {
+          console.log('ws auth failed, re-authenticating');
+          await useStore.getState().signInAnonymously();
+        }
+      },
       shouldReconnect: () => shouldConnect,
     },
     shouldConnect

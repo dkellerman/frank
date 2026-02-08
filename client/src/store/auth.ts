@@ -24,8 +24,14 @@ export const createAuthSlice: StateCreator<AuthState, [], [], AuthState> = (set,
 
     initAuth: async () => {
       if (get().authToken) {
-        console.log('auth: user', { userId: get().user?.id });
-        return;
+        const resp = await fetch('/api/auth/me', {
+          headers: { Authorization: `Bearer ${get().authToken}` },
+        });
+        if (resp.ok) {
+          console.log('auth: user', { userId: get().user?.id });
+          return;
+        }
+        set({ user: null, authToken: null });
       }
       await get().signInAnonymously();
       console.log('auth: user', { userId: get().user?.id });

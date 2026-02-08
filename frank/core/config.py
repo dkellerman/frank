@@ -1,4 +1,7 @@
+import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_env_file = ".env.production" if os.getenv("APP_ENV") == "production" else ".env"
 
 
 class Settings(BaseSettings):
@@ -9,10 +12,8 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: str
     HELICONE_API_KEY: str
     DATABASE_URL: str
-    PROMPTLAYER_API_KEY: str
-
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_env_file,
         env_file_encoding="utf-8",
         extra="ignore",
     )

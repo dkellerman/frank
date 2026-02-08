@@ -12,6 +12,8 @@ RUN apt-get update && apt-get install -y nginx && rm -rf /var/lib/apt/lists/*
 
 COPY deploy/nginx.conf /etc/nginx/nginx.conf
 COPY client/dist/ /app/client/
+COPY deploy/start.sh /app/start.sh
+RUN chmod +x /app/start.sh
 EXPOSE 8080
 
-CMD sh -c 'uv run uvicorn main:app --host 0.0.0.0 --port 8000 & exec nginx -g "daemon off;"'
+CMD ["/app/start.sh"]
