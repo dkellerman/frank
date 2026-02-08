@@ -1,4 +1,4 @@
-import { Settings, LogOut } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useStore } from '@/store';
 import { Button } from '@/components/ui/button';
