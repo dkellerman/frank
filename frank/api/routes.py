@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from frank.services.chat import ChatRequired, make_user_chat
 from frank.services.auth import UserRequired, create_anonymous_user
 from frank.core.db import get_session
-from frank.schemas import UserChat, AuthAnonymousResponse
+from frank.schemas import UserChat, AuthAnonymousResponse, AuthUserOut
 from frank.db.models import AuthToken as DbAuthToken
 
 
@@ -25,6 +25,11 @@ async def get_chat(chat: ChatRequired, user: UserRequired) -> UserChat:
 @router.get("/api/healthz")
 async def healthz() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@router.get("/api/auth/me")
+async def auth_me(user: UserRequired) -> AuthUserOut:
+    return user
 
 
 @router.post("/api/auth/anonymous", response_model=AuthAnonymousResponse)

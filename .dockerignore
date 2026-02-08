@@ -2,10 +2,17 @@ fly.toml
 .git/
 __pycache__/
 .envrc
+.env
+.env.local
 .venv/
+.context/
 client/node_modules/
 client/src
 client/package*.json
 client/vite.config.*
 client/.*
 *.pyc
+frank.db
+local/
+.DS_Store
+.ruff_cache

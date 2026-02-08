@@ -1,13 +1,13 @@
 from typing import Awaitable, Callable, AsyncGenerator
-from cachetools import LRUCache, TTLCache, cached
+from cachetools import LRUCache, cached
 from openai import AsyncOpenAI
 from pydantic_ai import Agent
 from pydantic_ai.messages import ModelMessage
 from pydantic_ai.result import StreamedRunResult
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openai import OpenAIProvider
-from promptlayer import PromptLayer
 from frank.core.config import settings
+from frank.prompts import SYSTEM_PROMPT
 from frank.schemas import AgentQuery, ChatModel
 
 
@@ -31,8 +31,6 @@ MODELS = [
 ]
 
 DEFAULT_MODEL = next((m for m in MODELS if m.is_default), MODELS[0])
-
-promptlayer = PromptLayer(api_key=settings.PROMPTLAYER_API_KEY)
 
 base_agent = Agent(instrument=True)
 
@@ -59,27 +57,8 @@ def get_model(slug: str) -> OpenAIModel:
 
 
 @base_agent.system_prompt
-@cached(cache=TTLCache(maxsize=32, ttl=300))
 def base_agent_system_prompt() -> str:
-    return str(promptlayer.templates.get("Frank System Prompt"))
-
-    # Not currently working...
-    # resp = httpx.post(
-    #     "https://api.helicone.ai/v1/prompt/version/query",
-    #     headers={
-    #         "authorization": f"{settings.HELICONE_API_KEY}",
-    #         "accept": "application/json",
-    #     },
-    #     json={"filter": {"id": {"equals": "BZTz2g"}}, "limit": 1},
-    #     timeout=10,
-    # )
-    # try:
-    #     resp.raise_for_status()
-    # except httpx.HTTPStatusError as e:
-    #     raise RuntimeError(f"Helicone compile failed: {resp.text}") from e
-    # rows = resp.json()
-    # data = rows[0]
-    # return data["helicone_template"]
+    return SYSTEM_PROMPT
 
 
 OnDoneCallback = Callable[[AgentQuery, StreamedRunResult], Awaitable[None]]
