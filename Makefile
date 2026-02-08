@@ -11,6 +11,11 @@ devc:
 	cd client && npm run dev
 
 devall:
+	@echo "Shutting down existing dev servers..."
+	@-kill -9 $$(lsof -ti:8000) 2>/dev/null; exit 0
+	@-kill -9 $$(lsof -ti:5173) 2>/dev/null; exit 0
+	@-pkill -f "honcho start" 2>/dev/null; exit 0
+	@echo "Starting dev servers..."
 	uv run honcho start -f Procfile.dev
 
 clai:
