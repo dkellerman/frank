@@ -8,6 +8,7 @@ function createTestStore(): AuthState {
     Object.assign(state, partial);
   };
   const get = () => state;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   state = createAuthSlice(set as any, get as any, {} as any);
   return state;
 }
