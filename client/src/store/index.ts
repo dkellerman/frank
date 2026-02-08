@@ -19,6 +19,7 @@ export const useStore = create<StoreState>()(
         name: 'frank-store',
         partialize: (state) => ({
           model: state.model,
+          userSelectedModel: state.userSelectedModel,
           themeMode: state.themeMode,
           authToken: state.authToken,
           user: state.user,
