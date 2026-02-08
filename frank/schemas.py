@@ -57,6 +57,14 @@ class AgentQuery(BaseModel):
     ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+class ChatSummary(BaseModel):
+    """Minimal chat summary for history list"""
+
+    id: str
+    title: str | None = None
+    ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
 class AuthUserOut(BaseModel):
     id: str
 
@@ -76,6 +84,7 @@ class EventType(str, enum.Enum):
     NEW_CHAT = "new_chat"
     NEW_CHAT_ACK = "new_chat_ack"
     REPLY = "reply"
+    CHAT_TITLE = "chat_title"
     ERROR = "error"
 
 
@@ -133,6 +142,15 @@ class ReplyEvent(BaseModel):
     ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+class ChatTitleEvent(BaseModel):
+    """Server sends this when a chat title has been generated"""
+
+    type: Literal[EventType.CHAT_TITLE] = EventType.CHAT_TITLE
+    chat_id: str = Field(alias="chatId")
+    title: str
+    ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
 class ErrorEvent(BaseModel):
     type: Literal[EventType.ERROR] = EventType.ERROR
     code: str
@@ -147,6 +165,7 @@ ChatEvent = Annotated[
     | NewChatAckEvent
     | SendEvent
     | ReplyEvent
+    | ChatTitleEvent
     | ErrorEvent,
     Discriminator("type"),
 ]

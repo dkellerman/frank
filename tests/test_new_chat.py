@@ -4,7 +4,6 @@ Verifies that submitting a chat from the home page correctly creates a chat
 and returns a NewChatAckEvent with the new chat id.
 """
 
-import json
 import uuid
 import pytest
 import pydantic
@@ -12,9 +11,7 @@ from unittest.mock import AsyncMock, patch
 from frank.schemas import (
     Chat,
     NewChatEvent,
-    AgentQuery,
     ChatEvent,
-    EventType,
     AuthUserOut,
 )
 

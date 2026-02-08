@@ -7,8 +7,8 @@ vi.mock('@/hooks/useChat', () => ({
   default: vi.fn(),
 }));
 
-vi.mock('@/store', () => ({
-  useStore: () => ({
+vi.mock('@/store', () => {
+  const state = {
     connected: true,
     loading: false,
     sending: false,
@@ -24,8 +24,15 @@ vi.mock('@/store', () => ({
     themeMode: 'system',
     themeLabel: 'System',
     setThemeMode: vi.fn(),
-  }),
-}));
+    scrollToTop: false,
+  };
+  return {
+    useStore: Object.assign(() => state, {
+      getState: () => state,
+      setState: vi.fn(),
+    }),
+  };
+});
 
 vi.mock('@tanstack/react-virtual', () => ({
   useVirtualizer: ({ count }: { count: number }) => ({

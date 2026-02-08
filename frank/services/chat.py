@@ -1,9 +1,10 @@
 import json
 import logfire
 import uuid
+import httpx
 from datetime import datetime, timezone
 from typing import Annotated
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, WebSocket
 from pydantic_ai.messages import (
     ModelMessagesTypeAdapter,
     ModelRequest,
@@ -12,10 +13,11 @@ from pydantic_ai.messages import (
 )
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from frank.core.db import get_session
+from frank.core.config import settings
+from frank.core.db import SessionLocal, get_session
 from frank.core.redis import get_redis
 from frank.db.models import ChatMessage, ChatRole, ChatSession
-from frank.schemas import Chat, UserChat, ChatEntry
+from frank.schemas import Chat, ChatTitleEvent, UserChat, ChatEntry
 
 
 HISTORY_LENGTH = 80
@@ -199,3 +201,90 @@ async def get_chat_required(
 
 ChatOptional = Annotated[Chat | None, Depends(get_chat_optional)]
 ChatRequired = Annotated[Chat, Depends(get_chat_required)]
+
+TITLE_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+TITLE_PROMPT = (
+    "Generate a short title (max 6 words) for this conversation. "
+    "Return ONLY the title text, nothing else.\n\n"
+    "User: {user_msg}\nAssistant: {assistant_msg}"
+)
+
+
+async def generate_and_set_title(chat: Chat, ws: WebSocket) -> None:
+    """Generate a chat title asynchronously and push it to the client."""
+    try:
+        # extract first user message and first assistant reply
+        user_msg = ""
+        assistant_msg = ""
+        for msg in chat.history:
+            if isinstance(msg, ModelRequest) and not user_msg:
+                for part in msg.parts:
+                    if isinstance(part, UserPromptPart) and part.content:
+                        user_msg = part.content
+                        break
+            elif not isinstance(msg, ModelRequest) and not assistant_msg:
+                for part in msg.parts:
+                    if isinstance(part, TextPart) and part.content:
+                        assistant_msg = part.content[:200]
+                        break
+            if user_msg and assistant_msg:
+                break
+
+        if not user_msg:
+            return
+
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                "https://openrouter.helicone.ai/api/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
+                    "Helicone-Auth": f"Bearer {settings.HELICONE_API_KEY}",
+                    "X-Title": "Frank",
+                    "HTTP-Referer": (
+                        "https://frank.xfr.llc"
+                        if settings.APP_ENV == "production"
+                        else "https://frankdev.xfr.llc"
+                    ),
+                },
+                json={
+                    "model": TITLE_MODEL,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": TITLE_PROMPT.format(
+                                user_msg=user_msg, assistant_msg=assistant_msg
+                            ),
+                        }
+                    ],
+                    "max_tokens": 20,
+                },
+                timeout=10,
+            )
+            resp.raise_for_status()
+            title = resp.json()["choices"][0]["message"]["content"].strip().strip('"\'')
+
+        # persist to DB
+        chat.title = title
+        async with SessionLocal() as session:
+            chat_row = await session.get(ChatSession, uuid.UUID(chat.id))
+            if chat_row:
+                chat_row.title = title
+                await session.commit()
+
+        # update Redis cache
+        try:
+            redis = get_redis()
+            cached = await redis.get(_make_key(chat.id))
+            if cached:
+                data = cached if isinstance(cached, dict) else json.loads(cached)
+                data["title"] = title
+                await redis.setex(_make_key(chat.id), CHAT_TTL, data)
+        except Exception as e:
+            logfire.error(f"Error updating title in Redis: {e}")
+
+        # push to client
+        event = ChatTitleEvent(chatId=chat.id, title=title)
+        await ws.send_json(event.model_dump(by_alias=True, mode="json"))
+
+    except Exception as e:
+        logfire.error(f"Error generating chat title: {e}")
