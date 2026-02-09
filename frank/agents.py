@@ -13,21 +13,16 @@ from frank.schemas import AgentQuery, ChatModel
 
 # openrouter models
 MODELS = [
-    ChatModel(id="google/gemini-2.5-flash", label="Gemini 2.5 Flash"),
-    ChatModel(id="openai/gpt-5", label="GPT-5"),
-    ChatModel(id="openai/gpt-5-mini", label="GPT-5 Mini"),
-    ChatModel(id="openai/gpt-5-nano", label="GPT-5 Nano"),
-    ChatModel(id="openai/gpt-4o", label="GPT-4o"),
-    ChatModel(id="openai/gpt-oss-20b", label="GPT-OSS 20B (small)"),
-    ChatModel(id="anthropic/claude-sonnet-4", label="Claude Sonnet 4"),
-    ChatModel(id="anthropic/claude-4.1", label="Claude 4.1"),
-    ChatModel(id="x-ai/grok-4", label="Grok 4"),
+    ChatModel(id="google/gemini-3-flash-preview", label="Gemini 3 Flash"),
+    ChatModel(id="openai/gpt-5.2", label="GPT-5.2"),
+    ChatModel(id="anthropic/claude-sonnet-4.5", label="Claude Sonnet 4.5"),
+    ChatModel(id="x-ai/grok-4.1-fast", label="Grok 4.1 Fast"),
+    ChatModel(id="deepseek/deepseek-v3.2", label="DeepSeek V3.2"),
     ChatModel(
-        id="meta-llama/llama-4-scout-17b-16e-instruct",
-        label="Llama 4 Scout",
+        id="meta-llama/llama-4-maverick",
+        label="Llama 4 Maverick",
         isDefault=True,
     ),
-    ChatModel(id="meta-llama/llama-3.1-8b-instruct:free", label="Llama 3.1 8B (free)"),
 ]
 
 DEFAULT_MODEL = next((m for m in MODELS if m.is_default), MODELS[0])
